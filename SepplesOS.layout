@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="test" />
+	<File name="kernel/interrupt.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4788" topLine="194" />
+		</Cursor>
+	</File>
+	<File name="kernel/keyboard.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="969" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/gdt.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1215" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/interruptWrapper.asm" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2645" topLine="160" />
+		</Cursor>
+	</File>
+	<File name="kernel/fs/ext2.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4757" topLine="68" />
+		</Cursor>
+	</File>
+	<File name="kernel/std/types.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="274" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/screen.cpp" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="419" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/paging.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="6234" topLine="191" />
+		</Cursor>
+	</File>
+	<File name="kernel/gdt.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="2891" topLine="59" />
+		</Cursor>
+	</File>
+	<File name="kernel/supc++/divdi3.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="112" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/screen.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4718" topLine="41" />
+		</Cursor>
+	</File>
+	<File name="kernel/syscalls.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4136" topLine="181" />
+		</Cursor>
+	</File>
+	<File name="kernel/process.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1573" topLine="41" />
+		</Cursor>
+	</File>
+	<File name="kernel/pic.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="824" topLine="34" />
+		</Cursor>
+	</File>
+	<File name="kernel/supc++/divdi3.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="593" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/supc++/udivmoddi4.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="258" topLine="210" />
+		</Cursor>
+	</File>
+	<File name="kernel/sepples.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="566" topLine="7" />
+		</Cursor>
+	</File>
+	<File name="kernel/supc++/umoddi3.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="106" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/supc++/umoddi3.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="116" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/multiboot.cpp" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3039" topLine="49" />
+		</Cursor>
+	</File>
+	<File name="kernel/lib/string.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="457" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/boot.asm" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1287" topLine="30" />
+		</Cursor>
+	</File>
+	<File name="kernel/fs/ext2.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="7059" topLine="149" />
+		</Cursor>
+	</File>
+	<File name="kernel/error.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="850" topLine="10" />
+		</Cursor>
+	</File>
+	<File name="kernel/power.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="72" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/idt.h" open="0" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="945" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/supc++/udivdi3.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="57" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/lib/string.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1347" topLine="54" />
+		</Cursor>
+	</File>
+	<File name="kernel/io.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="824" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/paging.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3388" topLine="87" />
+		</Cursor>
+	</File>
+	<File name="kernel/memmap.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1037" topLine="11" />
+		</Cursor>
+	</File>
+	<File name="kernel/fs/disk.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="4144" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/process.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="307" topLine="13" />
+		</Cursor>
+	</File>
+	<File name="kernel/pic.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="444" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/error.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="38" topLine="1" />
+		</Cursor>
+	</File>
+	<File name="kernel/supc++/udivmoddi4.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="120" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/multiboot.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1282" topLine="14" />
+		</Cursor>
+	</File>
+	<File name="kernel/keyboard.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1792" topLine="44" />
+		</Cursor>
+	</File>
+	<File name="kernel/lib/humanReadable.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1159" topLine="29" />
+		</Cursor>
+	</File>
+	<File name="kernel/power.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1345" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/lib/llist.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="989" topLine="186" />
+		</Cursor>
+	</File>
+	<File name="kernel/lib/humanReadable.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="280" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/keyboardLayout.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="307" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/fs/filesystem.cpp" open="0" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="6926" topLine="168" />
+		</Cursor>
+	</File>
+	<File name="kernel/idt.cpp" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="3337" topLine="44" />
+		</Cursor>
+	</File>
+	<File name="kernel/fs/disk.h" open="0" top="0" tabpos="0" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="107" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="kernel/fs/filesystem.h" open="0" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="610" topLine="10" />
+		</Cursor>
+	</File>
+</CodeBlocks_layout_file>

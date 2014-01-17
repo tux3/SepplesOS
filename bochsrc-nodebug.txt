@@ -1,0 +1,4 @@
+#include bochsrc.txt
+magic_break: enabled=0
+panic: action=report
+error: action=report
