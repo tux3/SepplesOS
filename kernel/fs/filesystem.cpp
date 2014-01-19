@@ -55,7 +55,14 @@ namespace IO
         {
             partList.empty();
 
-            // Read the MBR
+            // Try to rread the MBR
+            u16 magic;
+            diskRead(driveId, (0x1FE), (char *) &magic, 2);
+            if (magic != 0xAA55)
+            {
+                //error("No MBR found on drive %d\n", driveId);
+                return partList;
+            }
             for (int i=0; i<4; i++)
             {
                 // Add the partition
