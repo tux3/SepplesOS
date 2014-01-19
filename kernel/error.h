@@ -6,8 +6,8 @@
 
 #define BOCHSBREAK asm("xchg %bx, %bx");
 
-void error(const char* msg);		// Print error
-void fatalError(const char* msg);	// Print error and halt
+extern "C" void error(const char* msg);		// Print error
+extern "C" void fatalError(const char* msg);	// Print error and halt
 
 template <class T, class... Args> static void error(const char* format, const T& value, const Args&... args);
 template <class T, class... Args> static void fatalError(const char* format, const T& value, const Args&... args);

@@ -43,6 +43,10 @@
 		<Unit filename="kernel/fs/ext2.h" />
 		<Unit filename="kernel/fs/filesystem.cpp" />
 		<Unit filename="kernel/fs/filesystem.h" />
+		<Unit filename="kernel/fs/node.cpp" />
+		<Unit filename="kernel/fs/node.h" />
+		<Unit filename="kernel/fs/nodeVFS.cpp" />
+		<Unit filename="kernel/fs/nodeVFS.h" />
 		<Unit filename="kernel/gdt.cpp" />
 		<Unit filename="kernel/gdt.h" />
 		<Unit filename="kernel/idt.cpp" />

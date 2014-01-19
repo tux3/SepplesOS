@@ -79,20 +79,20 @@ public:
     u32* getPageDir0();
     u32 getKMallocUsed(); ///< Return the amount of memory allocated on the heap with kmalloc
     void printStats(); ///< Displays some infos about memory usage. Will call checkAllocChunks() first.
+    bool isMallocReady(); ///< Returns mallocReady.
 
     void checkAllocChunks(); ///< Checks all the memory chunks in the heap for inconsistencies.
     char* kmalloc(unsigned long size); ///< Alloc heap memory for the kernel and returns a pointer to it
     void kfree(void* vAddr); ///< Frees a block allocated with kmalloc
     struct kmallocHeader* ksbrk(unsigned npages); ///< Alloc a n-pages-sized chunk on the heap for kmalloc
 
-public:
-    static bool pagingEnabled;
 private:
     //llist<struct vmArea*> kernFreeVm; ///< List of the kernel's free pages
     u32* pageDir0;	///< kernel page directory. 1024 elements.
     u8* memBitmap; ///< Physical page alloc bitmap. Size of RAM_MAXPAGE/8 bytes. (= 1MiB large currently)
     u32 kmallocUsed;
     char* curKernHeap; ///< Points to the end of the heap currently used by malloc
+    bool mallocReady; ///< False when we can NOT use kmalloc/new at the moment.
 };
 
 char* memcpy(char* dst, const char* src, size_t n);

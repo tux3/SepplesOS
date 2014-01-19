@@ -24,6 +24,7 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     using namespace IO::FS;
 
     // Prepare kernel and print some info
+    gPaging = Paging();
     gTerm = VGAText();
     gKbd = Keyboard();
 	gTerm.clear();
@@ -45,7 +46,6 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     gTerm.print("PIC set\n");
 
     // Enable paging and logging
-    gPaging = Paging();
     gPaging.init(mbi->high_mem);
     bool result = reserveMbiMemmap(mbi);
     gTerm.enableLog(true);
@@ -87,5 +87,4 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
 	}
 	return;
 }
-/// TODO: Have the different types of FS nodes in different .cpp files
 /// TODO: Implement reading partitions tables other than the MBR.

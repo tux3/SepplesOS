@@ -3,15 +3,13 @@
 #include <memmap.h>
 #include <lib/humanReadable.h>
 
-// Static members
-bool Paging::pagingEnabled = false;
-
 Paging::Paging()
 {
     pageDir0 = (u32*) KERN_PAGE_DIR;	// kernel page directory
     memBitmap = (u8*) KERN_PAGE_BMP;         // page bitmap
 
     kmallocUsed = 0;
+    mallocReady = false; // Can't use malloc before we enable paging
 
     return;
 }
@@ -60,7 +58,7 @@ void Paging::init(u32 highMem)
     curKernHeap = (char *) KERN_HEAP;
     ksbrk(1); // Alloc one page for the kernel in the heap
 
-    pagingEnabled=true;
+    mallocReady = true;
 
     /*
     // Init the list of free virutal addresses
@@ -219,6 +217,11 @@ u32 Paging::getKMallocUsed()
     return kmallocUsed;
 }
 
+bool Paging::isMallocReady()
+{
+    return mallocReady;
+}
+
 /// Update the kernel's address space
 /// This space is shared between all the page directories !
 int Paging::pageDir0AddPage(char *vAddr, char *pAddr, int flags)
@@ -294,17 +297,25 @@ void Paging::printStats()
                     freePMem += PAGESIZE;
     }
 
-    // Compute free memory
+    // Compute free heap memory
     unsigned freeMem = (KERN_HEAP_LIM - KERN_HEAP) - kmallocUsed;
     if (freePMem < freeMem)
         freeMem = freePMem;
 
     char* buf = new char[64];
-    gTerm.printf("Heap : %s used, %s free\n", toIEC(buf,32,kmallocUsed), toIEC(buf+32,32,freeMem));
+    gTerm.printf("Heap (0x%x) : %s used, %s free\n", curKernHeap, toIEC(buf,32,kmallocUsed), toIEC(buf+32,32,freeMem));
 
-    u64 esp;
-    asm("mov %%esp, %0":"=m"(esp):);
-    gTerm.printf("Stack : %s used, %s free\n", toIEC(buf,32,KERN_STACK-esp), toIEC(buf+32,32,esp-KERN_STACK_LIM));
+    // Stack stats
+    u8 ss;
+    asm("mov %%ss, %0":"=m"(ss):);
+    // If we're not on the kernel's stack, we can't directly get the kernel's esp
+    // This means that atm the stack info is not displayed if this function is called from a ring >0
+    if (ss == 0b11000) // Segment selector 3
+    {
+        u32 esp;
+        asm("mov %%esp, %0":"=m"(esp):);
+        gTerm.printf("Stack (0x%x) : %s used, %s free\n", esp, toIEC(buf,32,KERN_STACK-esp), toIEC(buf+32,32,esp-KERN_STACK_LIM));
+    }
     delete buf;
 }
 
@@ -351,7 +362,7 @@ struct kmallocHeader* Paging::ksbrk(unsigned npages)
 {
     if (npages == 0)
     {
-        error("ksbrk: Called with npages == 0\n");
+        //error("ksbrk: Called with npages == 0\n");
         return (struct kmallocHeader *) -1;
     }
 
@@ -392,10 +403,18 @@ struct kmallocHeader* Paging::ksbrk(unsigned npages)
 
 char* Paging::kmalloc(unsigned long size)
 {
+    // kmalloc must be very carefull to NEVER call itself recursively.
+    // No new or malloc or functions that may use those (including VGAText with the log enabled)
+    // error and fatalError are safe since they'll check the state of malloc and disable the log if necessarys
+    if (!mallocReady)
+        fatalError("kmalloc called while malloc wasn't ready\n");
+    mallocReady = false;
+
     // If someone tries to allocate 0B, warn him that he might be in trouble and return the nullptr
     if (!size)
     {
         error("Paging::kmalloc called with a size of 0 !\n");
+        mallocReady = true;
         return nullptr;
     }
 
@@ -406,9 +425,11 @@ char* Paging::kmalloc(unsigned long size)
         realsize = KMALLOC_MINSIZE;
 
     // We search a free block of size 'size' bytes in the heap
+    //error("kmalloc: searching chunks for alloc of 0x%x bytes\n",size); DEBUG info
     chunk = (struct kmallocHeader *) KERN_HEAP;
     while (chunk->used || chunk->size < realsize)
     {
+        //error("kmalloc: chunk at 0x%x, size 0x%x\n", chunk, chunk->size); DEBUG info
         if (chunk->size == 0)
         {
             error("kmalloc() : Corrupted chunk on 0x%x with null size (heap end:0x%x) !\n", chunk, curKernHeap);
@@ -426,12 +447,14 @@ char* Paging::kmalloc(unsigned long size)
 
         if (chunk == (struct kmallocHeader *) curKernHeap)
         {
+            //error("kmalloc: no chunk found. Calling ksbrk\n"); DEBUG info
             if ((int)ksbrk((realsize / PAGESIZE) + 1) < 0)
                 fatalError("kmalloc() : no memory left for kernel !\n");
         }
         else if (chunk > (struct kmallocHeader *) curKernHeap)
             fatalError("kmalloc() : chunk on 0x%x while end of malloc heap is on 0x%x !\n",chunk, curKernHeap);
     }
+    //error("kmalloc: using chunk at 0x%x, size 0x%x (before resize)\n", chunk, chunk->size); DEBUG info
 
      // We found a block with a size >= 'size'. We make sure that each block has a minimal size
     if (chunk->size - realsize < KMALLOC_MINSIZE)
@@ -455,13 +478,15 @@ char* Paging::kmalloc(unsigned long size)
     kmallocUsed += realsize;
 
     // Return a pointer to the data
+    mallocReady = true;
     return (char *) chunk + sizeof(struct kmallocHeader);
 }
 
 void Paging::kfree(void *vAddr)
 {
-    if (!Paging::pagingEnabled)
-        fatalError("kfree called with paging disabled");
+    if (!mallocReady)
+        fatalError("kfree called with malloc not ready\n");
+    mallocReady = false;
 
     struct kmallocHeader *chunk, *other;
 
@@ -478,6 +503,8 @@ void Paging::kfree(void *vAddr)
         chunk->size += other->size;
         if (!chunk->size)
             fatalError("kfree() : chunk size set to 0 !\n");
+
+    mallocReady = true;
 }
 
 char* memcpy(char* dst, const char* src, size_t n)
@@ -491,28 +518,28 @@ char* memcpy(char* dst, const char* src, size_t n)
 
 void* operator new(size_t size)
 {
-    if (!Paging::pagingEnabled)
-        fatalError("new called with paging disabled");
+    if (!gPaging.isMallocReady())
+        fatalError("new called with paging disabled\n");
 	return gPaging.kmalloc(size);;
 }
 
 void* operator new[](size_t size)
 {
-    if (!Paging::pagingEnabled)
-        fatalError("new[] called with paging disabled");
+    if (!gPaging.isMallocReady())
+        fatalError("new[] called with paging disabled\n");
 	return gPaging.kmalloc(size);
 }
 
 void operator delete(void *p)
 {
-    if (!Paging::pagingEnabled)
-        fatalError("delete called with paging disabled");
+    if (!gPaging.isMallocReady())
+        fatalError("delete called with paging disabled\n");
 	gPaging.kfree(p);
 }
 
 void operator delete[](void *p)
 {
-    if (!Paging::pagingEnabled)
-        fatalError("delete[] called with paging disabled");
+    if (!gPaging.isMallocReady())
+        fatalError("delete[] called with paging disabled\n");
 	gPaging.kfree(p);
 }

@@ -16,7 +16,7 @@ GDT::GDT()
     defaultTss.debug_flag = 0x0;
     defaultTss.io_map = 0x0;
     defaultTss.esp0 = RING0_STACK; // Offset (from base of segment descripted by ss0)
-    defaultTss.ss0 = 0b11000; // Segment descriptor 8
+    defaultTss.ss0 = 0b1000000; // Segment descriptor 8
 
     // Init GDTR struct
     gdtr.limite = GDTSIZE * 8;

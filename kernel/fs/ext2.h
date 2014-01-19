@@ -3,6 +3,7 @@
 
 #include <std/types.h>
 #include <fs/filesystem.h>
+#include <fs/node.h>
 #include <process.h>
 
 #define EXT2_PRECACHE_ALL 1	// Met en cache toute l'arborescence au montage de la partition

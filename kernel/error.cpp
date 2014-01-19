@@ -1,17 +1,28 @@
 #include <error.h>
+#include <paging.h>
 
 using namespace IO;
 
-void error(const char* msg)
+extern "C" void error(const char* msg)
 {
-    gTerm.setCurStyle(VGAText::CUR_RED); // Style error ! Pour faire un peu peur =]
+    gTerm.setCurStyle(VGAText::CUR_RED); // Error style
+    if (!gPaging.isMallocReady() && gTerm.isLogEnabled())
+    {
+        gTerm.enableLog(false); // The log would use new/kmalloc, and we need to display the error anyway
+        gTerm.print("error: malloc isn't ready. VGAText log forcibly disabled.\n");
+    }
     gTerm.print(msg);
     gTerm.setCurStyle(); // Remet style normal
 }
 
-void fatalError(const char* msg)
+extern "C" void fatalError(const char* msg)
 {
-    gTerm.setCurStyle(VGAText::CUR_BLACK, false, VGAText::CUR_RED); // Style critical error ! Pour bien faire peur =]
+    gTerm.setCurStyle(VGAText::CUR_BLACK, false, VGAText::CUR_RED); // Critical error style
+    if (!gPaging.isMallocReady() && gTerm.isLogEnabled())
+    {
+        gTerm.enableLog(false); // The log would use new/kmalloc, and we need to display the error anyway
+        gTerm.print("fatalError: malloc isn't ready. VGAText log forcibly disabled.\n");
+    }
     gTerm.print(msg);
     gTerm.setCurStyle(); // Remet style normal
     halt();

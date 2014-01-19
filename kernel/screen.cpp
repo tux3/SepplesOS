@@ -21,19 +21,17 @@ namespace IO
         // Start with the log disabled
         logEnabled=false;
 
-        olock=false;
-
         return;
     }
 
-    VGAText::~VGAText()
+    bool VGAText::isLogEnabled()
     {
-
+        return logEnabled;
     }
 
     void VGAText::enableLog(bool state)
     {
-        while(olock);if(gti){cli;olock=true;} // Wait and Lock if interrupts are enabled
+        bool IF = gti; cli; // Screen operations should be atomic
         if (state)
         {
             // Init the log with the current state of the screen
@@ -48,23 +46,23 @@ namespace IO
             logEnabled=false;
             delete[] m_logBase;
         }
-        if(olock){olock=false;sti;} // Unlock if we locked
+        if (IF) sti;
     }
 
     void VGAText::print(const char* s)
     {
-        while(olock);if(gti){cli;olock=true;} // Wait and Lock if interrupts are enabled
+        bool IF = gti; cli; // Screen operations should be atomic
         for(;*s;s++)
             put(*s);
-        if(olock){olock=false;sti;} // Unlock if we locked
+        if (IF) sti;
     }
 
     void VGAText::printf(const char* format)
     {
-        while(olock);if(gti){cli;olock=true;} // Wait and Lock if interrupts are enabled
+        bool IF = gti; cli; // Screen operations should be atomic
         for(;*format;format++)
             put(*format);
-        if(olock){olock=false;sti;} // Unlock if we locked
+        if (IF) sti;
     }
 
     void VGAText::_printf(const char* format)
@@ -94,7 +92,7 @@ namespace IO
     {
         if (((x<0 || y<0) && (x!=-1 || y!=-1)) || x > m_width || y > m_height)
         {
-            error("VGAText::moveCursor: Invalid position (%d,%)",x,y);
+            error("VGAText::moveCursor: Invalid position (%d,%d)\n",x,y);
             return;
         }
 
@@ -189,9 +187,7 @@ namespace IO
 
     void VGAText::clear()
     {
-        // Lock
-        while(olock);
-        olock=true;
+        bool IF = gti; cli; // Screen operations should be atomic
         for (u8* videomem=(u8*)m_memBase; videomem<m_memLim; videomem+=2)
         {
             *videomem = 0;
@@ -205,14 +201,14 @@ namespace IO
 
         m_curX = 0;
         m_curY = 0;
-        olock=false; // Unlock
+        if (IF) sti;
     }
 
     void VGAText::scroll(int n)
     {
         if (!logEnabled)
         {
-            error("VGAText::scroll: Can't scroll with the log disabled.");
+            error("VGAText::scroll: Can't scroll with the log disabled.\n");
             return;
         }
 

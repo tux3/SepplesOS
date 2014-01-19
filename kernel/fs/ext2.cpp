@@ -12,7 +12,6 @@ namespace IO
         // Offset correspond au debut de la partition.
         struct ext2Disk *ext2GetDiskInfo(const int device, const struct partition& part)
         {
-            //kmsg(KMSG_DEBUG,"ext2_get_disk_info():called\n");
             int i, j;
             struct ext2Disk *hd;
 
@@ -20,8 +19,7 @@ namespace IO
 
             hd->device = device;
             hd->part = part;
-            //hd->sb = ext2_read_sb(hd, part.s_lba * 512);
-            hd->sb = ext2ReadSb(hd, part.sLba);
+            hd->sb = ext2ReadSb(hd, part.sLba * 512);
             hd->blocksize = 1024 << hd->sb->sLogBlockSize;
 
             if (hd->sb->sMagic != 0xef53)
@@ -42,25 +40,24 @@ namespace IO
                 ((hd->sb->sInodesCount % hd->sb->sInodesPerGroup) ? 1 : 0);
             hd->groups = (i > j) ? i : j;
 
-            //hd->gd = ext2_read_gd(hd, part.s_lba * 512);
-            hd->gd = ext2ReadGd(hd, part.sLba);
+            hd->gd = ext2ReadGd(hd, part.sLba * 512);
 
             // DEBUG: affiche des infos sur ce qui a été lu sur la patition
-            /*
-            globalTerm.setCurStyle(Video::VGAText::CUR_BLUE, true);
-            globalTerm.printf("Total number of inodes : %d\n", hd->sb->s_inodes_per_group);
-            globalTerm.printf("Total number of blocks : %d\n", hd->sb->s_blocks_per_group);
-            globalTerm.printf("Total number of inodes per group : %d\n", hd->sb->s_inodes_per_group);
-            globalTerm.printf("Total number of blocks per group : %d\n", hd->sb->s_blocks_per_group);
-            globalTerm.printf("First block : %d\n", hd->sb->s_first_data_block);
-            globalTerm.printf("First ext2Inode : %d\n", hd->sb->s_first_ino);
-            globalTerm.printf("Block size : %d\n", 1024 << hd->sb->s_log_block_size);
-            globalTerm.printf("Inode size : %d\n", hd->sb->s_inode_size);
-            globalTerm.printf("Minor revision : %d\n", hd->sb->s_minor_rev_level);
-            globalTerm.printf("Major revision : %d\n", hd->sb->s_rev_level);
-            globalTerm.printf("Ext2 signature (must be 0xef53) : 0x%x\n", hd->sb->s_magic);
-            globalTerm.setCurStyle();
-            */
+
+            gTerm.setCurStyle(VGAText::CUR_BLUE, true);
+            gTerm.printf("Total number of inodes : %d\n", hd->sb->sInodesPerGroup);
+            gTerm.printf("Total number of blocks : %d\n", hd->sb->sBlocksPerGroup);
+            gTerm.printf("Total number of inodes per group : %d\n", hd->sb->sInodesPerGroup);
+            gTerm.printf("Total number of blocks per group : %d\n", hd->sb->sBlocksPerGroup);
+            gTerm.printf("First block : %d\n", hd->sb->sFirstDataBlock);
+            gTerm.printf("First ext2Inode : %d\n", hd->sb->sFirstIno);
+            gTerm.printf("Block size : %d\n", 1024 << hd->sb->sLogBlockSize);
+            gTerm.printf("Inode size : %d\n", hd->sb->sInodeSize);
+            gTerm.printf("Minor revision : %d\n", hd->sb->sMinorRevLevel);
+            gTerm.printf("Major revision : %d\n", hd->sb->sRevLevel);
+            gTerm.printf("Ext2 signature (must be 0xef53) : 0x%x\n", hd->sb->sMagic);
+            gTerm.setCurStyle();
+
             // FIN-DEBUG
 
             return hd;
@@ -68,13 +65,11 @@ namespace IO
 
         struct ext2SuperBlock *ext2ReadSb(struct ext2Disk *hd, int sPart)
         {
-            //kmsg(KMSG_DEBUG,"ext2_read_sb():called\n");
-
             struct ext2SuperBlock *sb;
 
             sb = (struct ext2SuperBlock *) gPaging.kmalloc(sizeof(struct ext2SuperBlock));
-            //disk_read(hd->device, s_part + 1024, (char *) sb, sizeof(struct ext2_super_block));
-            diskReadBl(hd->device, sPart + 2, 0, (char *) sb, (sizeof(struct ext2SuperBlock)/512),0); // Un bloc = 512 octets
+            diskRead(hd->device, sPart + 1024, (char *) sb, sizeof(struct ext2SuperBlock));
+            //diskReadBl(hd->device, sPart + 2, 0, (char *) sb, (sizeof(struct ext2SuperBlock)/512),0); // Un bloc = 512 octets
 
             return sb;
         }
@@ -85,20 +80,20 @@ namespace IO
             struct ext2GroupDesc *gd;
             int offset, gdSize;
 
-            /* localisation du bloc */
+            // locate block
             offset = (hd->blocksize == 1024) ? 2048 : hd->blocksize;
 
-            /* taille occupee par les descripteurs */
+            // size occupied by the descriptors
             gdSize = hd->groups * sizeof(struct ext2GroupDesc);
 
-            /* creation du tableau de descripteurs */
+            // Create the descriptors table
             gd = (struct ext2GroupDesc *) gPaging.kmalloc(gdSize);
 
             //kmsgf(KMSG_DEBUG,"ext2_read_gd():offset : %d\n",offset);
             //kmsgf(KMSG_DEBUG,"ext2_read_gd():gd_size : %d\n",gd_size);
 
-            //disk_read(hd->device, s_part + offset, (char *) gd, gd_size);
-            diskReadBl(hd->device, sPart, offset, (char *) gd, 0, gdSize); // Un bloc = 512 octets
+            diskRead(hd->device, sPart + offset, (char *) gd, gdSize);
+            //diskReadBl(hd->device, sPart, offset, (char *) gd, 0, gdSize); // Un bloc = 512 octets
 
             return gd;
         }

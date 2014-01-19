@@ -18,9 +18,9 @@ void halt(void)
     cli;
 	asm("hlt");
 
-	// Should never go there (bochs may !)
+	// Should never go there (but it still happens)
 	error("Computer woke up, looping...\n");
-	while(1);
+	while(1) {asm("hlt");}
 
 }
 

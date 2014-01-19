@@ -24,7 +24,6 @@ namespace IO
 
         public:
             VGAText();
-            ~VGAText();
             //VGAText(int width, int height);
             void print(const char* s);
             template <class T, class... Args> void printf(const char* format, const T& value, const Args&... args);
@@ -40,6 +39,7 @@ namespace IO
             void rubout();
 
             void enableLog(bool state); ///< Enable or disable the log. Faster when disabled.
+            bool isLogEnabled();
             void showCursor();
             void hideCursor();
             void setCurStyle(char txtColor = CUR_WHITE, bool txtHighlight = false, char bgdColor = CUR_BLACK,  bool blink = false);
@@ -60,8 +60,7 @@ namespace IO
             u8* m_logBase;       // Debut du log VGA texte
             u8* m_logCur;       // Debut du dernier ecran du log VGA texte
             u8* m_logLim;        // Fin du log VGA texte
-            bool logEnabled;         // When true, write to the log, then memcpy to the screen. If false write directly to the screen.
-            bool olock;		// Verrou en ecriture sur la mémoire
+            bool logEnabled;         // When true, write to the log and screen. If false write directly to the screen.
             i8 m_curX;			// Position curseur : x
             i8 m_curY;			// Position curseur : y
             i8 m_curStyle;		// Attributs video des caracteres a afficher
@@ -74,9 +73,9 @@ namespace IO
     template <class T, class... Args>
     void VGAText::printf(const char* format, const T& value, const Args&... args)
     {
-        while(olock);if(gti){cli;olock=true;} // Wait and Lock if interrupts are enabled
+        bool IF = gti; cli; // Screen operations should be atomic
         _printf(format,value,args...); // Renvois les arguments à _printf !
-        if(olock){olock=false;sti;} // Unlock if we locked
+        if (IF) sti;
     }
 
     template <class T, class... Args>

@@ -1,5 +1,5 @@
 global _boot
-extern boot
+extern boot, fatalError
 
 %define MULTIBOOT_HEADER_MAGIC			0x1BADB002
 %define MULTIBOOT_HEADER_FLAGS			0x7
@@ -31,6 +31,9 @@ dd MULTIBOOT_HEADER_WIDTH
 dd MULTIBOOT_HEADER_HEIGHT
 dd MULTIBOOT_HEADER_DEPTH
 
+endOfCodeError:
+db "End of code",10,0
+
 ; Entry point
 _boot:
     ; We don't want interrupts
@@ -45,6 +48,8 @@ _boot:
 	push eax ; Pass the magic of multiboot_info as arg 1
 	call boot
 
-	; Halt, we shouldn't reach this point
+	; We shouldn't reach this point
+	push endOfCodeError
+	call fatalError
 	cli
 	hlt

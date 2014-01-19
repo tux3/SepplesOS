@@ -24,7 +24,7 @@ com3: enabled=0
 com4: enabled=0
 usb_uhci: enabled=1
 vga: extension=vbe
-cpu: count=1, ips=15000000, reset_on_triple_fault=0, ignore_bad_msrs=1
+cpu: count=1, ips=100000000, reset_on_triple_fault=0, ignore_bad_msrs=1
 cpuid: mmx=1, sep=1, sse=sse4_2, aes=1, movbe=1, xsave=1
 print_timestamps: enabled=0
 # no gdb stub
