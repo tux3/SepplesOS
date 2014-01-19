@@ -25,7 +25,8 @@ Autotool (make). A Code::Blocks project file is also provided.
 - make clean : Removes objects files, logs and sepples.iso
 - make prepare-usb : Install the kernel and GRUB2 on /dev/sdb
 - make update-usb : Overwrite the kernel on /dev/sdb (use prepare-usb once before)
-WARNING: Do NOT use "make prepare-usb" and "make update-usb" if /dev/sdb isn't a USB key !
+
+<b>WARNING: Do NOT use "make prepare-usb" and "make update-usb" if /dev/sdb isn't a USB key !</b>
 
 <h3>Keyboard</h3>
 QWERTY layout. May be incomplete.<br/>
