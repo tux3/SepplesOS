@@ -232,6 +232,9 @@ extern "C" void isr_kbd_int(void)
 		case 0x37: // ALT
 			alt_enable = 1;
 			break;
+        case 0x44: // Break
+            gPaging.printStats(); // Some infos about memory usage
+            break;
         case 0x48: // Page Up
             gTerm.scroll(-1);
             break;

@@ -1,6 +1,7 @@
 #include <power.h>
 #include <error.h>
 #include <io.h>
+#include <memmap.h>
 #include <std/types.h>
 
 // Attendre quelques microsecondes (environ)
@@ -13,6 +14,7 @@ static void udelay(int loops)
 
 void halt(void)
 {
+    error("System halted\n");
     cli;
 	asm("hlt");
 
@@ -24,6 +26,7 @@ void halt(void)
 
 void reboot(void)
 {
+    error("Rebooting...\n");
     // 1.Keyboard reboot (Ask the CPU to ask the Keyboard to ask the BIOS to reboot !)
     int i;
     for (i = 0; i < 10; i++)
@@ -54,7 +57,7 @@ void reboot(void)
 	//globalTerm.print("Triplefaulting happilly\n");
 	cli;
     for (u16 i=0; i<1024; i++) // Erase the IDT and GDT
-       *((u64*)(0x80000 + i)) = 0;
+       *((u32*)(IDTBASE + i)) = 0;
     sti;
     asm("int $0"::);
 	//fatalError("OH SHI-");

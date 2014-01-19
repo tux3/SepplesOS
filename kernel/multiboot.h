@@ -71,4 +71,8 @@ void checkMbi(u32 mbmagic, struct multiboot_info *mbi);
 /// If there's no memory map in the mbi, return false.
 bool reserveMbiMemmap(struct multiboot_info *mbi);
 
+/// If a memory map is provided, print it
+/// If there's no memory map in the mbi, return false.
+bool printMbiMemmap(struct multiboot_info *mbi);
+
 #endif

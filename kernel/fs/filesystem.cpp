@@ -51,11 +51,9 @@ namespace IO
         }
 
         /// Reads the IBM PC partition table from the MBR
-        /// (TODO: for the moment only primary partitions, implement reading the EBR(Extended boot record) !)
         llist<struct partition> FilesystemManager::readPartitionTable(const int driveId)
         {
             partList.empty();
-            int iEBR = -1; // Number of the first EBR found
 
             // Read the MBR
             for (int i=0; i<4; i++)
@@ -66,51 +64,7 @@ namespace IO
                 part.id=i+1;
                 if (part.fsId != 0 && part.size != 0) // Add only if it's valid
                     partList << part;
-
-                // Search an extended partition
-                if (detectFsType(part) == FSTYPE_EBR) // If we found one, remember it for later
-                    iEBR=i;
             }
-
-            /*
-            // If we found an EBR, read it now
-            if (iEBR >= 0)
-            {
-                gTerm.printf("Partition %d is extended\n", iEBR+1);
-                int curId=5; // Logical partitions : 5-255
-                unsigned int EBR = partList[iEBR]->sLba * 512; // Addr of the EBR
-                u16 magic;
-                do
-                {
-                    //globalTerm.printf("Trying to read partition %d\n", curId);
-                    // Lis la premiere entree du EBR (partition logique)
-                    part = new partition;
-                    diskRead(driveId, (EBR + 0x01BE), (char *) part, 16);
-                    if (part.fsId != 0 && part.size != 0) // Seulement si la partition est valide, on l'ajoute a la liste
-                    {
-                        if (EBR % 512 != 0) // Si EBR/512 n'est pas une divion exacte, y'as un serieux probleme vu que EBR ne peut venir que d'expressions de la forme (XXX->s_lba * 512)
-                            fatalError("EBR address (0x%x) is not a multiple of 512 (0x200)", EBR);
-                        part.sLba += EBR / 512; // Le s_lba qu'on a lu est l'offset par rapport a l'EBR courant, on converti en adresse absolue
-                        part.id=curId;
-                        partList << part;
-                        curId++;
-                    }
-                    else
-                        delete part;
-
-                    // Check the EBR magic
-                    diskRead(driveId, (EBR + 0x01FE), (char *)&magic, 2);
-
-                    // Lis le seconde entree du EBR (pointeur sur l'EBR suivant)
-                    part = new partition;
-                    diskRead(driveId, (EBR + 0x01CE), (char *) part, 16);
-                    EBR = part.sLba * 512 + partList[iEBR]->sLba * 512; // EBR suivant = Addr premier EBR + s_lba, si s_lba == 0, EBR = partList[iEBR-1]->s_lba et on sort de la boucle
-                    //globalTerm.printf("EBR magic : 0x%x, next EBR offset (in blocks) : %d\n", magic, part.s_lba);
-                    delete part;
-                } while (magic == 0xAA55 && EBR != partList[iEBR]->sLba * 512); // Tant qu'on trouve des EBR correctes, on les lit
-
-            }
-            */
 
             return partList;
         }

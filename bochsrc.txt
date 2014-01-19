@@ -2,8 +2,8 @@
 plugin_ctrl: unmapped=1, biosdev=1, speaker=1, extfpuirq=1
 config_interface: textconfig
 display_library: sdl
-memory: host=256, guest=256
-megs: 256
+memory: host=512, guest=512
+megs: 512
 romimage: file="/usr/share/bochs/BIOS-bochs-latest"
 vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
 boot: cdrom

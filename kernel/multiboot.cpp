@@ -53,17 +53,22 @@ bool reserveMbiMemmap(struct multiboot_info *mbi)
 
     struct mmap* cur = (struct mmap*) mbi->mmap_addr;
     struct mmap* end = (struct mmap*) ((u32)cur + mbi->mmap_length);
-    while (cur < end)
-    {
-        gTerm.printf("MMAP (size:%d) : BaseAddr : 0x%x, Length : 0x%x, Type %d\n", cur->size , cur->base_addr, cur->length, cur->type);
-        // Type 1 is available RAM, everything else is reserved
-        if (cur->type != 1)
+    for (;cur < end; cur = (struct mmap*) ((u32)cur + (u32)cur->size + sizeof(cur->size)))
+        if (cur->type != 1) // Type 1 is available RAM, everything else is reserved
             for (unsigned int i=0; i<cur->length; i += PAGESIZE)
                 gPaging.setPageFrameUsed((cur->base_addr + i)/PAGESIZE);
 
-        // Go to the next mmap
-        cur = (struct mmap*) ((u32)cur + (u32)cur->size + sizeof(cur->size));
-    }
+    return true;
+}
+
+bool printMbiMemmap(struct multiboot_info *mbi)
+{
+    if(!(mbi->flags & 0b01000000))
+        return false;
+    struct mmap* cur = (struct mmap*) mbi->mmap_addr;
+    struct mmap* end = (struct mmap*) ((u32)cur + mbi->mmap_length);
+    for (;cur < end; cur = (struct mmap*) ((u32)cur + (u32)cur->size + sizeof(cur->size)))
+        gTerm.printf("Type %d : 0x%x - 0x%x\n", cur->type, cur->base_addr, cur->base_addr+cur->length);
 
     return true;
 }

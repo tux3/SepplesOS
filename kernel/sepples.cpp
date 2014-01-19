@@ -44,15 +44,19 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     picMgr.setFrequency(50);
     gTerm.print("PIC set\n");
 
-    // Enable paging
+    // Enable paging and logging
     gPaging = Paging();
     gPaging.init(mbi->high_mem);
-    reserveMbiMemmap(mbi);
-    gTerm.print("Paging enabled\n");
-
-    // Enable VGAText logging (now that we have paging)
+    bool result = reserveMbiMemmap(mbi);
     gTerm.enableLog(true);
-    gTerm.print("Log enabled (page up/down to scroll)\n");
+    if (result)
+    {
+        gTerm.setCurStyle(IO::VGAText::CUR_BLUE,true); // printMbiMemmap will reset the style
+        gTerm.print("Memory map :\n");
+        printMbiMemmap(mbi);
+        gTerm.setCurStyle();
+    }
+    gTerm.print("Paging enabled\n");
 
     // Init taskmanager, enable interrupts
     gTaskmgr = TaskManager();
@@ -68,10 +72,12 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     llist<struct partition> partList = gFS.getPartList();
 
     char* buf = new char[64];
+    gTerm.setCurStyle(IO::VGAText::CUR_BLUE,true); // printMbiMemmap will reset the style
     gTerm.printf("%d partitions detected\n", partList.size());
     for(u8 i=0; i<partList.size(); i++) /// Ne pas oublier le cast A L'INTERIEUR DU CALCUL, c'est "(uint64)s_lba * 512", sinon int overflow pendant la multiplication et toIEC recoit n'importe quoi
         gTerm.printf("Partition %d : start:%s, size:%s, type:%s\n", partList[i].id, toIEC(buf,64,(u64)partList[i].sLba*512), toIEC(buf,32,(u64)partList[i].size*512), partList[i].getTypeName());
     delete buf; buf=nullptr;
+    gTerm.setCurStyle();
 
     gTerm.print("Kernel sleeping ...\n");
 	while(1)
@@ -81,7 +87,5 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
 	}
 	return;
 }
-/// TODO: Pushing, for example, the Sys key, should display infos like kmallocUsed
-/// TODO: Page Up/Down for the log
-
-/// => 72 is page up, 80 is page down
+/// TODO: Have the different types of FS nodes in different .cpp files
+/// TODO: Implement reading partitions tables other than the MBR.

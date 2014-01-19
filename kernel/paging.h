@@ -62,8 +62,8 @@ public:
     void init(u32 highMem); ///< Activates paging
 
     char *getPageFrame(); ///< Gets a free page from the bitmap (and mark it as used)
-    struct page* getPageFromHeap(); ///< Gets a free page from the bitmap and associate it to a virtual page in the heap
-    int releasePageFromHeap(char *vAddr); ///< Free a page from the bitmap and the heap
+    //struct page* getPageFromHeap(); ///< Gets a free page from the bitmap and associate it to a virtual page in the heap
+    //int releasePageFromHeap(char *vAddr); ///< Free a page from the bitmap and the heap
 
     void setPageFrameUsed(u32 page); ///< Marks a page as used in the bitmap
     void releasePageFrame(u32 pAddr); ///< Marks a page as free in the bitmap
@@ -78,20 +78,21 @@ public:
     char* getPAddr(char* vAddr); ///< Returns the physicall address associated to a virtual address
     u32* getPageDir0();
     u32 getKMallocUsed(); ///< Return the amount of memory allocated on the heap with kmalloc
+    void printStats(); ///< Displays some infos about memory usage. Will call checkAllocChunks() first.
 
     void checkAllocChunks(); ///< Checks all the memory chunks in the heap for inconsistencies.
-    struct kmallocHeader* ksbrk(int npage); ///< Add n pages to the size of the kernel heap
     char* kmalloc(unsigned long size); ///< Alloc heap memory for the kernel and returns a pointer to it
     void kfree(void* vAddr); ///< Frees a block allocated with kmalloc
+    struct kmallocHeader* ksbrk(unsigned npages); ///< Alloc a n-pages-sized chunk on the heap for kmalloc
 
 public:
     static bool pagingEnabled;
 private:
-    llist<struct vmArea*> kernFreeVm; ///< List of the kernel's free pages
-    u32* pageDir0;	///< kernel page directory
+    //llist<struct vmArea*> kernFreeVm; ///< List of the kernel's free pages
+    u32* pageDir0;	///< kernel page directory. 1024 elements.
     u8* memBitmap; ///< Physical page alloc bitmap. Size of RAM_MAXPAGE/8 bytes. (= 1MiB large currently)
     u32 kmallocUsed;
-    char* kernHeap; ///< Points to the top of the kernel heap
+    char* curKernHeap; ///< Points to the end of the heap currently used by malloc
 };
 
 char* memcpy(char* dst, const char* src, size_t n);

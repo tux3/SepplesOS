@@ -376,7 +376,7 @@ void TaskManager::schedule(void)
         current->regs.fs = stack_ptr[3];
         current->regs.gs = stack_ptr[2];
         errorHandler::error("SCHEDULER EFLAGS:0x%x, CS:0x%x, EIP:0x%x\n",current->regs.eflags,current->regs.cs,current->regs.eip);
-        BOCHSBREAK
+//        BOCHSBREAK
 
          // Sauvegarde le contenu des registres de pile (ss, esp)
          // au moment de l'interruption. Necessaire car le processeur
@@ -435,7 +435,7 @@ void TaskManager::schedule(void)
 void TaskManager::switchToTask(int n, int mode)
 {
     globalTerm.printf("Switching to task %d mode %d !\n",n,mode);
-    BOCHSBREAK
+//    BOCHSBREAK
 
     uint32 kesp, eflags;
     uint32 kss, ss, cs;

@@ -1,6 +1,7 @@
 #include <paging.h>
 #include <error.h>
 #include <memmap.h>
+#include <lib/humanReadable.h>
 
 // Static members
 bool Paging::pagingEnabled = false;
@@ -18,7 +19,6 @@ Paging::Paging()
 void Paging::init(u32 highMem)
 {
     unsigned int page, pageLimit;
-    unsigned long i;
     struct vmArea *p;
 
     // Number of the last page
@@ -38,10 +38,13 @@ void Paging::init(u32 highMem)
 
     // Init the kernel's page directory
     pageDir0[0] = ((u32) KERN_IDENTITY_START | (PAGE_PRESENT | PAGE_WRITE | PAGE_4MB));
-    pageDir0[1] = ((u32) (KERN_IDENTITY_START+PAGESIZE_BIG) | (PAGE_PRESENT | PAGE_WRITE | PAGE_4MB));
-    for (i = 2; i < 1023; i++)
-        pageDir0[i] = ((u32)(KERN_IDENTITY_START+PAGESIZE_BIG) + PAGESIZE * i) | (PAGE_PRESENT | PAGE_WRITE);
+    for (u16 i = 1; i < 1023; i++)
+        pageDir0[i] = ((u32)KERN_PAGE_TABLES + 0x1000 * (i-1)) | (PAGE_PRESENT | PAGE_WRITE); // Each page table is 0x1000 B long
     pageDir0[1023] = ((u32) pageDir0 | (PAGE_PRESENT | PAGE_WRITE)); // Page table mirroring trick
+
+    // Init the kernel's first page table (partially) to complete the identity mapping
+    for (u16 i = 0; i < 639; i++) // 639*PAGESIZE + PAGESIZE_BIG = 0x67F000 = KERN_IDENTITY_END
+        *((u32*)KERN_PAGE_TABLES+4*i) = ((PAGESIZE_BIG + PAGESIZE*i) | (PAGE_PRESENT | PAGE_WRITE));
 
     // Enable pagination. Will enable malloc, free, new and delete
     asm("	mov %0, %%eax \n \
@@ -54,16 +57,18 @@ void Paging::init(u32 highMem)
         mov %%eax, %%cr0"::"m"(pageDir0), "i"(PAGING_FLAG), "i"(PSE_FLAG));
 
     // Init the kernel heap used by kmalloc
-    kernHeap = (char *) KERN_HEAP;
+    curKernHeap = (char *) KERN_HEAP;
     ksbrk(1); // Alloc one page for the kernel in the heap
 
     pagingEnabled=true;
 
+    /*
     // Init the list of free virutal addresses
     p = (struct vmArea*) kmalloc(sizeof(struct vmArea));
     p->vmStart = (char*) KERN_PAGE_HEAP;
     p->vmEnd = (char*) KERN_PAGE_HEAP_LIM;
     kernFreeVm.prepend(p);
+    */
 }
 
 char* Paging::getPageFrame()
@@ -71,17 +76,23 @@ char* Paging::getPageFrame()
     int page = -1;
 
     for (int byte = 0; byte < RAM_MAXPAGE / 8; byte++)
-        if (memBitmap[byte] != 0xFF)
-            for (int bit = 0; bit < 8; bit++)
-                if (!(memBitmap[byte] & (1 << bit)))
-                {
-                    page = 8 * byte + bit;
-                    setPageFrameUsed(page);
-                    return (char *) (page * PAGESIZE);
-                }
-    return nullptr; // Error !
+    {
+        if (memBitmap[byte] == 0xFF)
+            continue;
+        for (int bit = 0; bit < 8; bit++)
+            if (!(memBitmap[byte] & (1 << bit)))
+            {
+                page = 8 * byte + bit;
+                setPageFrameUsed(page);
+                return (char *) (page * PAGESIZE);
+            }
+    }
+
+    error("Paging::getPageFrame: No free page frame found.\n");
+    return nullptr;
 }
 
+/*
 struct page* Paging::getPageFromHeap()
 {
     struct page *page;
@@ -90,10 +101,10 @@ struct page* Paging::getPageFromHeap()
 
     // Get a free physical page
     pAddr = getPageFrame();
-    if ((int)pAddr < 0)
+    if ((int)pAddr <= 0)
         fatalError("PANIC: getPageFromHeap(): no page frame available. System halted !\n");
 
-    // Check if there's a free virtua page
+    // Check if there's a free virtual page
     //if (list_empty(&kernFreeVm))
     if (kernFreeVm.isEmpty())
         fatalError("PANIC: getPageFromHeap(): not memory left in page heap. System halted !\n");
@@ -186,6 +197,7 @@ int Paging::releasePageFromHeap(char *vAddr)
 
     return 0;
 }
+*/
 
 void Paging::setPageFrameUsed(u32 page)
 {
@@ -211,8 +223,8 @@ u32 Paging::getKMallocUsed()
 /// This space is shared between all the page directories !
 int Paging::pageDir0AddPage(char *vAddr, char *pAddr, int flags)
 {
-    u32 *pageDire;
-    u32 *pageTablee;
+    u32 *pageDirE;
+    u32 *pageTableE;
 
     if (vAddr >= (char *) USER_OFFSET)
     {
@@ -221,14 +233,16 @@ int Paging::pageDir0AddPage(char *vAddr, char *pAddr, int flags)
     }
 
     // Check that the page really is here
-    pageDire = (u32 *) (0xFFFFF000 | (((u32) vAddr & 0xFFC00000) >> 20)); // 0xFFFFF000 is vAddr of last entry in pageDir, wich is mapped to pAddr of pageDir (mirroring trick)
-    if ((*pageDire & PAGE_PRESENT) == 0)
+    // 0xFFFFF000 is vAddr of last entry in pageDir, wich is mapped to pAddr of pageDir (mirroring trick)
+    // The 10 first bits of the vAddr are the index of the entry into the page dir.
+    pageDirE = (u32 *) (0xFFFFF000 | (((u32) vAddr & 0xFFC00000) >> 20));
+    if ((*pageDirE & PAGE_PRESENT) == 0)
         fatalError("pageDir0AddPage(): kernel page table not found for vAddr 0x%x. System halted !\n", vAddr);
 
     // Edit the entry in the page table
-    pageTablee = (u32 *) (0xFFC00000 | (((u32) vAddr & 0xFFFFF000) >> 10));
-    *pageTablee = ((u32) pAddr) | (PAGE_PRESENT | PAGE_WRITE | flags);
-
+    // The first 2*10 bits are indexes into the dir/table. Each entry is 4B large.
+    pageTableE = (u32 *) (0xFFC00000 | (((u32) vAddr & 0xFFFFF000) >> 10));
+    *pageTableE = ((u32) pAddr) | (PAGE_PRESENT | PAGE_WRITE | flags);
     return 0;
 }
 
@@ -262,44 +276,36 @@ char* Paging::getPAddr(char *vAddr)
     return 0;
 }
 
-struct kmallocHeader* Paging::ksbrk(int npages)
+void Paging::printStats()
 {
-    if (npages == 0)
-        return (struct kmallocHeader *) -1;
+    checkAllocChunks(); // We wouldn't want to display wrong info, better check that everything is clean first.
 
-    struct kmallocHeader *chunk;
-    char *pAddr;
-
-    // If we don't have enough room left in the heap, we're in trouble.
-    if ((kernHeap + (npages * PAGESIZE)) > (char *) KERN_HEAP_LIM)
+    // Count how many free physical pages we have
+    unsigned freePMem = 0;
+    for (int byte = 0; byte < RAM_MAXPAGE / 8; byte++)
     {
-        error("Paging::ksbrk: No virtual memory left for kernel heap\n");
-        return (struct kmallocHeader *) -1;
+        if (memBitmap[byte] == 0xFF)
+            continue;
+        else if (memBitmap[byte] == 0)
+            freePMem += 8*PAGESIZE;
+        else
+            for (int bit = 0; bit < 8; bit++)
+                if (!(memBitmap[byte] & (1 << bit)))
+                    freePMem += PAGESIZE;
     }
 
-    chunk = (struct kmallocHeader *) kernHeap;
+    // Compute free memory
+    unsigned freeMem = (KERN_HEAP_LIM - KERN_HEAP) - kmallocUsed;
+    if (freePMem < freeMem)
+        freeMem = freePMem;
 
-    // Alloc a free page
-    for (int i = 0; i < npages; i++)
-    {
-        pAddr = getPageFrame();
-        if ((int)pAddr <= 0)
-        {
-            error("Paging::ksbrk: No free page frame available !\n");
-            return (struct kmallocHeader *) -1;
-        }
+    char* buf = new char[64];
+    gTerm.printf("Heap : %s used, %s free\n", toIEC(buf,32,kmallocUsed), toIEC(buf+32,32,freeMem));
 
-        // Add to the page dir
-        pageDir0AddPage(kernHeap, pAddr, 0);
-
-        kernHeap += PAGESIZE;
-    }
-
-    // Mark for kmalloc
-    chunk->size = PAGESIZE * npages;
-    chunk->used = 0;
-
-    return chunk;
+    u64 esp;
+    asm("mov %%esp, %0":"=m"(esp):);
+    gTerm.printf("Stack : %s used, %s free\n", toIEC(buf,32,KERN_STACK-esp), toIEC(buf+32,32,esp-KERN_STACK_LIM));
+    delete buf;
 }
 
 void Paging::checkAllocChunks()
@@ -312,15 +318,15 @@ void Paging::checkAllocChunks()
     for (;;) // Check all the chunks, break at the end
     {
         // If we're at (or after) the end
-        if (chunk == (struct kmallocHeader *) kernHeap)
+        if (chunk == (struct kmallocHeader *) curKernHeap)
             break;
-        else if (chunk > (struct kmallocHeader *) kernHeap)
-            fatalError("checkAllocChunks: chunk on 0x%x while heap limit is on 0x%x\n",chunk, kernHeap);
+        else if (chunk > (struct kmallocHeader *) curKernHeap)
+            fatalError("checkAllocChunks: chunk on 0x%x while end of malloc heap is on 0x%x\n",chunk, curKernHeap);
 
         // If a chunk has a null size, try to repair it
         if (chunk->size == 0)
         {
-            error("checkAllocChunks: Corrupted chunk on 0x%x with null size (heap 0x%x) !\n", chunk, kernHeap);
+            error("checkAllocChunks: Corrupted chunk on 0x%x with null size (heap 0x%x) !\n", chunk, curKernHeap);
             if (chunk == (struct kmallocHeader *) KERN_HEAP)
                 fatalError("The first chunk is corrupted. Can't fix.\n");
             else
@@ -339,6 +345,49 @@ void Paging::checkAllocChunks()
 
     if (totalSize != kmallocUsed)
         error("checkAllocChunks: Total size is %d but kmallocUsed is %d.\n", totalSize, kmallocUsed);
+}
+
+struct kmallocHeader* Paging::ksbrk(unsigned npages)
+{
+    if (npages == 0)
+    {
+        error("ksbrk: Called with npages == 0\n");
+        return (struct kmallocHeader *) -1;
+    }
+
+    struct kmallocHeader *chunk;
+    char *pAddr;
+
+    // If we don't have enough room left in the heap, we're in trouble.
+    if ((curKernHeap + (npages * PAGESIZE)) > (char *) KERN_HEAP_LIM)
+    {
+        error("Paging::ksbrk: No virtual memory left for kernel heap\n");
+        return (struct kmallocHeader *) -1;
+    }
+
+    chunk = (struct kmallocHeader *) curKernHeap;
+
+    // Alloc a free page
+    for (int i = 0; i < npages; i++)
+    {
+        pAddr = getPageFrame();
+        if ((int)pAddr <= 0)
+        {
+            error("Paging::ksbrk: No free page frame available !\n");
+            return (struct kmallocHeader *) -1;
+        }
+
+        // Add to the page dir
+        pageDir0AddPage(curKernHeap, pAddr, 0);
+
+        curKernHeap += PAGESIZE;
+    }
+
+    // Mark for kmalloc
+    chunk->size = PAGESIZE * npages;
+    chunk->used = 0;
+
+    return chunk;
 }
 
 char* Paging::kmalloc(unsigned long size)
@@ -362,7 +411,7 @@ char* Paging::kmalloc(unsigned long size)
     {
         if (chunk->size == 0)
         {
-            error("kmalloc() : Corrupted chunk on 0x%x with null size (heap 0x%x) !\n", chunk, kernHeap);
+            error("kmalloc() : Corrupted chunk on 0x%x with null size (heap end:0x%x) !\n", chunk, curKernHeap);
             if (chunk == (struct kmallocHeader *) KERN_HEAP)
                 fatalError("The first chunk is corrupted. Can't fix.\n");
             else
@@ -375,13 +424,13 @@ char* Paging::kmalloc(unsigned long size)
         other = chunk;
         chunk = (struct kmallocHeader *) ((char *) chunk + chunk->size); // Go to the next chunk
 
-        if (chunk == (struct kmallocHeader *) kernHeap)
+        if (chunk == (struct kmallocHeader *) curKernHeap)
         {
             if ((int)ksbrk((realsize / PAGESIZE) + 1) < 0)
                 fatalError("kmalloc() : no memory left for kernel !\n");
         }
-        else if (chunk > (struct kmallocHeader *) kernHeap)
-            fatalError("kmalloc() : chunk on 0x%x while heap limit is on 0x%x !\n",chunk, kernHeap);
+        else if (chunk > (struct kmallocHeader *) curKernHeap)
+            fatalError("kmalloc() : chunk on 0x%x while end of malloc heap is on 0x%x !\n",chunk, curKernHeap);
     }
 
      // We found a block with a size >= 'size'. We make sure that each block has a minimal size
@@ -424,7 +473,7 @@ void Paging::kfree(void *vAddr)
 
     // Merge the free'd block with the next one, if he's free too
     while ((other = (struct kmallocHeader *) ((char *) chunk + chunk->size))
-           && other < (struct kmallocHeader *) kernHeap
+           && other < (struct kmallocHeader *) curKernHeap
            && other->used == 0)
         chunk->size += other->size;
         if (!chunk->size)

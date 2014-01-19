@@ -37,7 +37,7 @@ _boot:
     cli
 
     ; Set up the initial stack frame
-	mov esp, 0x9DFFF ; KERN_STACK
+	mov esp, 0x9C7FF ; KERN_STACK
 	mov ebp, esp
 
 	; Call the kernel's boot
