@@ -58,7 +58,8 @@ char* strchr(const char* s, int c)
 }
 
 // Convert int value into a C-String
-char* itoa(i64 value, char* result, int base) {
+char* itoa(i64 value, char* result, int base)
+{
 	// check that the base if valid
 	if (base < 2 || base > 36) { *result = '\0'; return result; }
 

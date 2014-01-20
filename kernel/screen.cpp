@@ -1,6 +1,7 @@
 #include <screen.h>
 #include <paging.h>
 #include <memmap.h>
+#include <error.h>
 
 namespace IO
 {
@@ -20,6 +21,7 @@ namespace IO
 
         // Start with the log disabled
         logEnabled=false;
+        m_logBase=nullptr;
 
         return;
     }
@@ -35,6 +37,8 @@ namespace IO
         if (state)
         {
             // Init the log with the current state of the screen
+            if (m_logBase) // If the last log wasn't free'd, free it now
+                delete[] m_logBase;
             m_logBase = new u8[2*m_width*m_height];
             m_logCur = m_logBase;
             m_logLim = m_logBase + 2*m_width*m_height;
@@ -43,8 +47,13 @@ namespace IO
         }
         else
         {
+            // Is the paging is ready, free the log now
+            if (gPaging.isMallocReady())
+            {
+                delete[] m_logBase;
+                m_logBase = nullptr;
+            }
             logEnabled=false;
-            delete[] m_logBase;
         }
         if (IF) sti;
     }

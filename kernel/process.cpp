@@ -8,6 +8,7 @@
 //#include <disk/ext2.h>
 //#include <disk/filesystem.h>
 #include <syscalls.h>
+#include <lib/llist.h>
 
 /// TaskManager
 TaskManager::TaskManager()

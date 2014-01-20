@@ -9,6 +9,7 @@
 #include <process.h>
 #include <fs/filesystem.h>
 #include <lib/humanReadable.h>
+#include <lib/llist.h>
 
 // Singletons
 IO::VGAText gTerm;
@@ -79,10 +80,15 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     delete buf; buf=nullptr;
     gTerm.setCurStyle();
 
-    /// TEST: Mount the partition and read hello.txt
-    if (partList.size() == 1 && partList[0].fsId == FSTYPE_EXT2)
+    /// TEST: Mount the first ext2/ext3 partition and read hello.txt
+       // Remove partitions we can't read
+    for (int i=0; i<partList.size();)
+        if (partList[i].fsId != FSTYPE_EXT2)
+            partList.removeAt(i);
+        else
+            i++;
+    if (partList.size() && gFS.mount(partList[0]))
     {
-        gFS.mount(partList[0]);
         gTerm.setCurStyle(IO::VGAText::CUR_GREEN,true);
         gTerm.print("Partition mounted, reading the MOTD : \n");
         gTerm.setCurStyle(IO::VGAText::CUR_CYAN,true);
@@ -112,5 +118,11 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
 	return;
 }
 
-/// TODO: Loading /usr/hello.txt from the disk and printing it !
+/// TODO: Bug: Maybe for some diskRead we should do sLba*512. Check the arguments and the old code.
 /// TODO: Implement reading partitions tables other than the MBR.
+
+/// TODO: Fix that paging bug before anything else. Save a snapshot of the code and try to find the source of the problem
+/// => Corrupted chunk on 0x685000 with null size (heap end:0x686000) !
+/// => Fix the bug in the Sepples_corruptedchunk copy, not in here ! Copy the fix when it works
+
+/// => disableLog should only delete if malloc is ready

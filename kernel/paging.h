@@ -2,7 +2,7 @@
 #define PAGING_H_INCLUDED
 
 #include <std/types.h>
-#include <lib/llist.h>
+#include <lib/llistForward.h>
 
 #define	PAGESIZE 	    0x1000
 #define	PAGESIZE_BIG    0x400000
@@ -81,10 +81,12 @@ public:
     void printStats(); ///< Displays some infos about memory usage. Will call checkAllocChunks() first.
     bool isMallocReady(); ///< Returns mallocReady.
 
-    void checkAllocChunks(); ///< Checks all the memory chunks in the heap for inconsistencies.
     char* kmalloc(unsigned long size); ///< Alloc heap memory for the kernel and returns a pointer to it
     void kfree(void* vAddr); ///< Frees a block allocated with kmalloc
     struct kmallocHeader* ksbrk(unsigned npages); ///< Alloc a n-pages-sized chunk on the heap for kmalloc
+
+    void checkAllocChunks(); ///< Checks all the memory chunks in the heap for inconsistencies.
+    void printChunks(); ///< Print the list of malloc chunks
 
 private:
     //llist<struct vmArea*> kernFreeVm; ///< List of the kernel's free pages

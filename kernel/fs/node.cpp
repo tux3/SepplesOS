@@ -1,6 +1,9 @@
 #include <fs/node.h>
 #include <fs/filesystem.h>
 #include <process.h>
+#include <error.h>
+#include <lib/string.h>
+#include <lib/llist.h>
 
 namespace IO
 {

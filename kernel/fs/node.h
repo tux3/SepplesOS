@@ -1,7 +1,8 @@
 #ifndef NODE_H_INCLUDED
 #define NODE_H_INCLUDED
 
-#include <lib/llist.h>
+#include <lib/llistForward.h>
+#include <std/types.h>
 
 #define FS_ROOT_NODE_ID 0
 #define FS_NODE_NAME_MAXLENGTH 256

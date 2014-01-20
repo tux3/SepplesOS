@@ -2,6 +2,7 @@
 #include <error.h>
 #include <memmap.h>
 #include <lib/humanReadable.h>
+#include <screen.h>
 
 Paging::Paging()
 {
@@ -332,7 +333,10 @@ void Paging::checkAllocChunks()
         if (chunk == (struct kmallocHeader *) curKernHeap)
             break;
         else if (chunk > (struct kmallocHeader *) curKernHeap)
+        {
             fatalError("checkAllocChunks: chunk on 0x%x while end of malloc heap is on 0x%x\n",chunk, curKernHeap);
+            printChunks();
+        }
 
         // If a chunk has a null size, try to repair it
         if (chunk->size == 0)
@@ -355,7 +359,38 @@ void Paging::checkAllocChunks()
     }
 
     if (totalSize != kmallocUsed)
+    {
         error("checkAllocChunks: Total size is %d but kmallocUsed is %d.\n", totalSize, kmallocUsed);
+        printChunks();
+    }
+}
+
+void Paging::printChunks()
+{
+    struct kmallocHeader *chunk;
+    error("printChunks: kmallocUsed:%d, curKernHeap:0x%x\n", kmallocUsed, (u32)curKernHeap);
+    chunk = (struct kmallocHeader *) KERN_HEAP;
+    bool newline=false; // Used to format two chunks / line
+    for (;;) // Check all the chunks, break at the end
+    {
+        // If we're at (or after) the end
+        if (chunk == (struct kmallocHeader *) curKernHeap)
+        {
+            error("printChunks: curKernHeap reached.\n");
+            return;
+        }
+        else if (chunk > (struct kmallocHeader *) curKernHeap)
+        {
+            error("printChunks: chunks ends after curKernHeap\n");
+            return;
+        }
+
+        error("Chunk at 0x%x size 0x%x", (u32)chunk, chunk->size);
+        if (newline)    error("\n");
+        else            error("\t\t");
+        newline = !newline;
+        chunk = (struct kmallocHeader *)((int)chunk + chunk->size); // Next
+    }
 }
 
 struct kmallocHeader* Paging::ksbrk(unsigned npages)
@@ -405,7 +440,7 @@ char* Paging::kmalloc(unsigned long size)
 {
     // kmalloc must be very carefull to NEVER call itself recursively.
     // No new or malloc or functions that may use those (including VGAText with the log enabled)
-    // error and fatalError are safe since they'll check the state of malloc and disable the log if necessarys
+    // error and fatalError are safe since they'll check the state of malloc and disable the log if necessary
     if (!mallocReady)
         fatalError("kmalloc called while malloc wasn't ready\n");
     mallocReady = false;
@@ -432,7 +467,7 @@ char* Paging::kmalloc(unsigned long size)
         //error("kmalloc: chunk at 0x%x, size 0x%x\n", chunk, chunk->size); DEBUG info
         if (chunk->size == 0)
         {
-            error("kmalloc() : Corrupted chunk on 0x%x with null size (heap end:0x%x) !\n", chunk, curKernHeap);
+            error("kmalloc() : Corrupted chunk on 0x%x with null size (heap end:0x%x) !\n", (u32)chunk, (u32)curKernHeap);
             if (chunk == (struct kmallocHeader *) KERN_HEAP)
                 fatalError("The first chunk is corrupted. Can't fix.\n");
             else
@@ -452,11 +487,14 @@ char* Paging::kmalloc(unsigned long size)
                 fatalError("kmalloc() : no memory left for kernel !\n");
         }
         else if (chunk > (struct kmallocHeader *) curKernHeap)
-            fatalError("kmalloc() : chunk on 0x%x while end of malloc heap is on 0x%x !\n",chunk, curKernHeap);
+        {
+            fatalError("kmalloc() : chunk on 0x%x while end of malloc heap is on 0x%x !\n",(u32)chunk, (u32)curKernHeap);
+        }
     }
     //error("kmalloc: using chunk at 0x%x, size 0x%x (before resize)\n", chunk, chunk->size); DEBUG info
 
      // We found a block with a size >= 'size'. We make sure that each block has a minimal size
+     // If we wouldn't have the room to separate this chunk in two chunks, just use the whole chunk
     if (chunk->size - realsize < KMALLOC_MINSIZE)
         chunk->used = 1;
     else
@@ -466,16 +504,16 @@ char* Paging::kmalloc(unsigned long size)
         other->used = 0;
 
         if (!other->size)
-            fatalError("kmalloc() : chunk size of 'other' set to 0 !\n");
+            fatalError("kmalloc() : chunk size of 'other' set to 0 !\n"); // This isn't supposed to be possible
 
         chunk->size = realsize;
         chunk->used = 1;
 
         if (!chunk->size)
-            fatalError("kmalloc() : chunk size of 'chunk' set to 0 !\n");
+            fatalError("kmalloc() : chunk size of 'chunk' set to 0 !\n"); // This isn't supposed to be possible
     }
 
-    kmallocUsed += realsize;
+    kmallocUsed += chunk->size;
 
     // Return a pointer to the data
     mallocReady = true;
@@ -519,27 +557,27 @@ char* memcpy(char* dst, const char* src, size_t n)
 void* operator new(size_t size)
 {
     if (!gPaging.isMallocReady())
-        fatalError("new called with paging disabled\n");
+        fatalError("new called with paging disabled, size:0x%x\n",size);
 	return gPaging.kmalloc(size);;
 }
 
 void* operator new[](size_t size)
 {
     if (!gPaging.isMallocReady())
-        fatalError("new[] called with paging disabled\n");
+        fatalError("new[] called with paging disabled, size:0x%x\n",size);
 	return gPaging.kmalloc(size);
 }
 
 void operator delete(void *p)
 {
     if (!gPaging.isMallocReady())
-        fatalError("delete called with paging disabled\n");
+        fatalError("delete called with paging disabled, addr:0x%x\n",(u32)p);
 	gPaging.kfree(p);
 }
 
 void operator delete[](void *p)
 {
     if (!gPaging.isMallocReady())
-        fatalError("delete[] called with paging disabled\n");
+        fatalError("delete[] called with paging disabled, addr:0x%x\n",(u32)p);
 	gPaging.kfree(p);
 }

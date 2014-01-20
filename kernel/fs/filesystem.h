@@ -2,7 +2,7 @@
 #define FILE_H_INCLUDED
 
 #include <std/types.h>
-#include <lib/llist.h>
+#include <lib/llistForward.h>
 
 namespace IO
 {
@@ -17,8 +17,9 @@ namespace IO
                 FSTYPE_FAT32_CHS	= 0x0b,
                 FSTYPE_FAT32_LBA	= 0x0c,
                 FSTYPE_SWAP			= 0x82,
-                FSTYPE_EXT2			= 0x83,
-                FSTYPE_EXT3			= 0x83
+                FSTYPE_LINUX_NATIVE = 0x83,
+                FSTYPE_EXT2,
+                FSTYPE_EXT3
             };
 
         struct partition
@@ -27,7 +28,7 @@ namespace IO
             u8 sHead;			// Starting head
             u16 sSector:6;		// Starting sector
             u16 sCyl:10;		// Starting cylinder
-            u8 fsId;			// Partition Filesystem ID (type)
+            u8 fsId;			// Filesystem ID (type), as reported by detectFsType
             u8 eHead;			// Ending Head
             u16 eSector:6;		// Ending Sector
             u16 eCyl:10;		// Ending Cylinder

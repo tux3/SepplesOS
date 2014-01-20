@@ -1,5 +1,7 @@
 #include <error.h>
 #include <paging.h>
+#include <screen.h>
+#include <power.h>
 
 using namespace IO;
 

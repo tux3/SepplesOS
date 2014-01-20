@@ -1,5 +1,6 @@
 #include <fs/nodeVFS.h>
 #include <process.h>
+#include <error.h>
 
 namespace IO
 {

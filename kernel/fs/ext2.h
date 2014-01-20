@@ -74,10 +74,10 @@ namespace IO
             u32 sFeatureCompat;
             u32 sFeatureIncompat;
             u32 sFeatureRoCompat;
-            u8 sUuid[16];		/* Volume id */
-            char sVolumeName[16];	/* Volume name */
-            char sLastMounted[64];	/* Path where the file system was last mounted */
-            u32 sAlgoBitmap;	/* For compression */
+            u8 sUuid[16];		// Volume id
+            char sVolumeName[16];	// Volume name
+            char sLastMounted[64];	// Path where the file system was last mounted
+            u32 sAlgoBitmap;	// For compression
             u8 sPadding[820];
         } __attribute__ ((packed));
 

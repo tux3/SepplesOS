@@ -3,6 +3,8 @@
 #include <fs/filesystem.h>
 #include <screen.h>
 #include <paging.h>
+#include <error.h>
+#include <lib/llist.h>
 
 namespace IO
 {
@@ -24,7 +26,7 @@ namespace IO
 
             if (hd->sb->sMagic != 0xef53)
             {
-                error("Partition not detected as ext2, signature is : %x\n", hd->sb->sMagic);
+                error("Partition not detected as ext2/ext3, signature is : %x\n", hd->sb->sMagic);
                 return 0;
             }
 
@@ -420,7 +422,7 @@ namespace IO
         {
             if (type != NODE_FILE)
             {
-                error("Can't read node, it isn't a file.\n");
+                error("NodeEXT2::read: Can't read node, it isn't a file.\n");
                 return 0;
             }
 
@@ -438,7 +440,7 @@ namespace IO
             }
             if (!found)
             {
-                error("Can't read node, descriptor not opened.\n");
+                error("NodeEXT2::read: Can't read node, descriptor not opened.\n");
                 return 0;
             }
 

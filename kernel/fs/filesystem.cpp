@@ -6,6 +6,8 @@
 #include <lib/humanReadable.h>
 #include <paging.h>
 #include <screen.h>
+#include <error.h>
+#include <lib/llist.h>
 
 namespace IO
 {
@@ -67,8 +69,9 @@ namespace FS
                 struct partition part;
                 diskRead(driveId, (0x01BE + (16 * i)), (char *) &part, 16);
                 part.id=i+1;
-                if (part.fsId != 0 && part.size != 0) // Add only if it's valid
-                    partList << part;
+                part.fsId = detectFsType(part);
+                //if (part.fsId != FSTYPE_UNKNOWN && part.fsId != FSTYPE_FREE && part.size != 0) // Add only if it's valid
+                partList << part;
             }
         }
         else // Try to read the whole disk as a ext2/ext3 partition
@@ -132,7 +135,6 @@ namespace FS
             // Create the drive node in /dev/
             itoa(i,buf2,10); // Put the number in buf
             ((NodeEXT2*)pathToNode("/dev/"))->createChild(buf2, NODE_DRIVE, hd, EXT2_ROOT_INUM, inode);
-            NodeEXT2* node = (NodeEXT2*)pathToNode("/dev/1/usr/hello.txt");
 
             return true;
         }
@@ -160,9 +162,11 @@ namespace FS
             // Ext2/Ext3 (Ext3 = Ext2 + Journal, but they are both completely compatible in both ways
             struct ext2SuperBlock *sb;
             sb = (struct ext2SuperBlock *) gPaging.kmalloc(sizeof(struct ext2SuperBlock));
-            diskReadBl(0, part.sLba + 2, 0, (char *) sb, (sizeof(struct ext2SuperBlock)/512),0); // 1 block is 512B
+            diskRead(0, part.sLba + 1024, (char *) sb, (sizeof(struct ext2SuperBlock)));
             if (sb->sMagic == 0xef53) // ext2/ext3 magic
                 return FSTYPE_EXT2;
+            else
+                return FSTYPE_LINUX_NATIVE;
             gPaging.kfree(sb);
         }
 

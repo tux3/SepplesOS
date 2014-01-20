@@ -60,6 +60,7 @@
 		<Unit filename="kernel/lib/humanReadable.cpp" />
 		<Unit filename="kernel/lib/humanReadable.h" />
 		<Unit filename="kernel/lib/llist.h" />
+		<Unit filename="kernel/lib/llistForward.h" />
 		<Unit filename="kernel/lib/string.cpp" />
 		<Unit filename="kernel/lib/string.h" />
 		<Unit filename="kernel/memmap.h" />

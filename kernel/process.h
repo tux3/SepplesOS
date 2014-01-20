@@ -5,7 +5,7 @@
 #include <paging.h>
 #include <fs/ext2.h>
 #include <fs/filesystem.h>
-#include <lib/llist.h>
+#include <lib/llistForward.h>
 
 #define KERNELMODE 	0
 #define USERMODE 	1
