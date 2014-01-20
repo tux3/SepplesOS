@@ -132,6 +132,7 @@ namespace FS
             // Create the drive node in /dev/
             itoa(i,buf2,10); // Put the number in buf
             ((NodeEXT2*)pathToNode("/dev/"))->createChild(buf2, NODE_DRIVE, hd, EXT2_ROOT_INUM, inode);
+            NodeEXT2* node = (NodeEXT2*)pathToNode("/dev/1/usr/hello.txt");
 
             return true;
         }
@@ -189,7 +190,7 @@ namespace FS
         return true;
     }
 
-    // Returns the node associated to path
+    // Returns the node associated to path or nullptr on errors
     // path is absolute if starting with /, else it's relative to the current process's working dir
     Node* FilesystemManager::pathToNode(const char* path)
     {
@@ -209,7 +210,7 @@ namespace FS
         while (*beg_p != 0)
         {
             if (current->getType() != NODE_DIRECTORY && current->getType() != NODE_DRIVE)
-                return 0;
+                return nullptr;
 
             // Find the name of the subdir
             while (*end_p != 0 && *end_p != '/')
@@ -231,7 +232,7 @@ namespace FS
                         current = current->getChilds()[i];
                     }
                 if (!found)
-                    return 0;
+                    return nullptr;
             }
 
             beg_p = end_p;

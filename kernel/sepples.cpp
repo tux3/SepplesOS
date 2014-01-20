@@ -72,12 +72,36 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     llist<struct partition> partList = gFS.getPartList();
 
     char* buf = new char[64];
-    gTerm.setCurStyle(IO::VGAText::CUR_BLUE,true); // printMbiMemmap will reset the style
+    gTerm.setCurStyle(IO::VGAText::CUR_BLUE,true);
     gTerm.printf("%d partitions detected\n", partList.size());
     for(u8 i=0; i<partList.size(); i++) /// Ne pas oublier le cast A L'INTERIEUR DU CALCUL, c'est "(uint64)s_lba * 512", sinon int overflow pendant la multiplication et toIEC recoit n'importe quoi
         gTerm.printf("Partition %d : start:%s, size:%s, type:%s\n", partList[i].id, toIEC(buf,64,(u64)partList[i].sLba*512), toIEC(buf,32,(u64)partList[i].size*512), partList[i].getTypeName());
     delete buf; buf=nullptr;
     gTerm.setCurStyle();
+
+    /// TEST: Mount the partition and read hello.txt
+    if (partList.size() == 1 && partList[0].fsId == FSTYPE_EXT2)
+    {
+        gFS.mount(partList[0]);
+        gTerm.setCurStyle(IO::VGAText::CUR_GREEN,true);
+        gTerm.print("Partition mounted, reading the MOTD : \n");
+        gTerm.setCurStyle(IO::VGAText::CUR_CYAN,true);
+        NodeEXT2* node = (NodeEXT2*)gFS.pathToNode("/dev/0/etc/motd");
+        if (node != nullptr)
+        {
+            u64 size = node->getSize();
+            if (size)
+            {
+                char* buf = new char[size+1];
+                buf[size]='\0';
+                node->open();
+                node->read(buf, size);
+                node->close();
+                gTerm.print(buf);
+            }
+        }
+        gTerm.setCurStyle();
+    }
 
     gTerm.print("Kernel sleeping ...\n");
 	while(1)
@@ -87,4 +111,6 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
 	}
 	return;
 }
+
+/// TODO: Loading /usr/hello.txt from the disk and printing it !
 /// TODO: Implement reading partitions tables other than the MBR.
