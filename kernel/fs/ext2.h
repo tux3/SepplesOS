@@ -72,7 +72,7 @@ namespace IO
             u16 sInodeSize;	/* Inode size */
             u16 sBlockGroupNr;	/* Block group hosting this superblock structure */
             u32 sFeatureCompat; // Optional features (ext3 flag is here
-            u32 sFeatureIncompat; // Required features to read/write
+            u32 sFeatureIncompat; // Required features to read.
             u32 sFeatureRoCompat; // Required features to write. If you don't support them, mount as readonly.
             u8 sUuid[16];		// Volume id
             char sVolumeName[16];	// Volume name

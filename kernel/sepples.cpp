@@ -89,7 +89,7 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
             partList.removeAt(i);
         else
             i++;
-    if (partList.size() && gFS.mount(partList[0]))
+    if (partList.size() && gFS.mount(partList[1]))
     {
         gTerm.setCurStyle(IO::VGAText::CUR_GREEN,true);
         gTerm.print("Partition mounted, reading the MOTD : \n");

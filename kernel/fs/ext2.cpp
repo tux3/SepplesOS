@@ -33,12 +33,6 @@ struct ext2Disk *ext2GetDiskInfo(const int device, const struct partition& part)
         return nullptr;
     }
 
-    if (hd->sb->sInodeSize != sizeof(ext2Inode))
-    {
-        error("ext2GetDiskInfo: Inode size is %d, returning 0 for your safety.\n",hd->sb->sInodeSize);
-        return nullptr;
-    }
-
     i = (hd->sb->sBlocksCount / hd->sb->sBlocksPerGroup) +
         ((hd->sb->sBlocksCount % hd->sb->sBlocksPerGroup) ? 1 : 0);
     j = (hd->sb->sInodesCount / hd->sb->sInodesPerGroup) +
@@ -48,6 +42,72 @@ struct ext2Disk *ext2GetDiskInfo(const int device, const struct partition& part)
     hd->gd = ext2ReadGd(hd, (u64)part.sLba * 512);
 
     // DEBUG: affiche des infos sur ce qui a été lu sur la patition
+
+    if (hd->sb->sFeatureIncompat & 0x1)
+    {
+        error("ext2GetDiskInfo: Compression required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x4)
+    {
+        error("ext2GetDiskInfo: Journal replay recovery required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x8)
+    {
+        error("ext2GetDiskInfo: Journal device required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x10)
+    {
+        error("ext2GetDiskInfo: Meta block groups required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x40)
+    {
+        error("ext2GetDiskInfo: Extents required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x80)
+    {
+        error("ext2GetDiskInfo: 64bit FS size required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x100)
+    {
+        error("ext2GetDiskInfo: Multiple mount protection required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x200)
+    {
+        error("ext2GetDiskInfo: Flexible block groups required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x400)
+    {
+        error("ext2GetDiskInfo: Extended attributes required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x1000)
+    {
+        error("ext2GetDiskInfo: Data in directory entry required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x2000)
+    {
+        error("ext2GetDiskInfo: Meta checksum required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x4000)
+    {
+        error("ext2GetDiskInfo: Large directory (>2GB) required, but not supported\n");
+        return nullptr;
+    }
+    else if (hd->sb->sFeatureIncompat & 0x8000)
+    {
+        error("ext2GetDiskInfo: Data in inode required, but not supported\n");
+        return nullptr;
+    }
 
     gTerm.setCurStyle(VGAText::CUR_BLUE, true);
     gTerm.printf("Total number of inodes : %d\n", hd->sb->sInodesPerGroup);

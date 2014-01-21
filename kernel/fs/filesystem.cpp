@@ -181,6 +181,7 @@ namespace FS
             else                            return FSTYPE_LINUX_NATIVE;
 
             if (sb->sFeatureCompat & 0x4)   type = FSTYPE_EXT3;
+            if (sb->sFeatureCompat >> 0x4)   type = FSTYPE_EXT4;
 
             delete sb;
             return type;
