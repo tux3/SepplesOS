@@ -177,11 +177,11 @@ namespace FS
             int type = FSTYPE_LINUX_NATIVE;
             struct ext2SuperBlock *sb = new ext2SuperBlock;
             diskRead(part.diskId, (u64)part.sLba*512 + 1024, (char *) sb, sizeof(struct ext2SuperBlock));
-            if (sb->sMagic == 0xef53)       type = FSTYPE_EXT2;
-            else                            return FSTYPE_LINUX_NATIVE;
+            if (sb->sMagic == 0xef53)           type = FSTYPE_EXT2;
+            else                                return FSTYPE_LINUX_NATIVE;
 
-            if (sb->sFeatureCompat & 0x4)   type = FSTYPE_EXT3;
-            if (sb->sFeatureCompat >> 0x4)   type = FSTYPE_EXT4;
+            if (sb->sFeatureCompat & 0x4)       type = FSTYPE_EXT3;
+            if ((sb->sFeatureIncompat&0xFFF0) != 0) type = FSTYPE_EXT4;
 
             delete sb;
             return type;

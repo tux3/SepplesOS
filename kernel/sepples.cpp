@@ -85,7 +85,7 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     /// TEST: Mount the first ext2/ext3 partition and read hello.txt
     // Remove partitions we can't read
     for (unsigned i=0; i<partList.size();)
-        if (partList[i].fsId != FSTYPE_EXT2 && partList[i].fsId != FSTYPE_EXT3)
+        if (partList[i].fsId != FSTYPE_EXT2 && partList[i].fsId != FSTYPE_EXT3 && partList[i].fsId != FSTYPE_EXT4)
             partList.removeAt(i);
         else
             i++;
