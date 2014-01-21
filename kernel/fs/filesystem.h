@@ -19,7 +19,8 @@ namespace IO
                 FSTYPE_SWAP			= 0x82,
                 FSTYPE_LINUX_NATIVE = 0x83,
                 FSTYPE_EXT2,
-                FSTYPE_EXT3
+                FSTYPE_EXT3,
+                FSTYPE_EXT4
             };
 
         struct partition

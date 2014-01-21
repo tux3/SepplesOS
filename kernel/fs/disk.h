@@ -7,10 +7,12 @@ namespace IO
 {
     namespace FS
     {
-        int blRead(int drive, int numblock, int count, char *buf);	// drive, block, count, buf
-        int blWrite(int drive, int numblock, int count, char *buf); // drive, block, count, buf
+        int blRead(int drive, int numblock, int count, char *buf);
+        int blWrite(int drive, int numblock, int count, char *buf);
 
-        int diskRead(int drive, int offset, char *buf, int count);	// drive, offset, buf, count
+        // Cast to u64 before performing operations on offset !
+        // For example diskRead(a,b*512,c,d) may overflow, diskRead(a,(u64)b*512,c,d) will not
+        int diskRead(int drive, u64 offset, char *buf, u64 count);
         int diskReadBl(int drive, int blOffset, int byteOffset, char *buf, int blCount, int byteCount);
     }
 }

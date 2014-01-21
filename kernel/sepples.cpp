@@ -7,6 +7,7 @@
 #include <pic.h>
 #include <screen.h>
 #include <process.h>
+#include <debug.h>
 #include <fs/filesystem.h>
 #include <lib/humanReadable.h>
 #include <lib/llist.h>
@@ -72,6 +73,7 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     gTerm.print("VFS loaded\n");
     llist<struct partition> partList = gFS.getPartList();
 
+    // List partitions
     char* buf = new char[64];
     gTerm.setCurStyle(IO::VGAText::CUR_BLUE,true);
     gTerm.printf("%d partitions detected\n", partList.size());
@@ -81,9 +83,9 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     gTerm.setCurStyle();
 
     /// TEST: Mount the first ext2/ext3 partition and read hello.txt
-       // Remove partitions we can't read
-    for (int i=0; i<partList.size();)
-        if (partList[i].fsId != FSTYPE_EXT2)
+    // Remove partitions we can't read
+    for (unsigned i=0; i<partList.size();)
+        if (partList[i].fsId != FSTYPE_EXT2 && partList[i].fsId != FSTYPE_EXT3)
             partList.removeAt(i);
         else
             i++;
@@ -118,11 +120,15 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
 	return;
 }
 
-/// TODO: Bug: Maybe for some diskRead we should do sLba*512. Check the arguments and the old code.
+/// TODO: Add an ext2 partition to oldlaptop and play with it !
+/// TODO: Implement multitasking
 /// TODO: Implement reading partitions tables other than the MBR.
+/// TODO: Have FilesystemManager::mount call NodeEXT2::mount instead of doing it himself
 
-/// TODO: Fix that paging bug before anything else. Save a snapshot of the code and try to find the source of the problem
-/// => Corrupted chunk on 0x685000 with null size (heap end:0x686000) !
-/// => Fix the bug in the Sepples_corruptedchunk copy, not in here ! Copy the fix when it works
+/// => Fix the buggy Ext2 driver.
+/**
 
-/// => disableLog should only delete if malloc is ready
+Use printChunks every time there's something weird going on
+Use the breakpoints on the chunk metadata that gets overwritten to find where it happens
+
+**/

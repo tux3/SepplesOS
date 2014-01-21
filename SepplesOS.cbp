@@ -35,6 +35,8 @@
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Unit filename="kernel/boot.asm" />
+		<Unit filename="kernel/debug.cpp" />
+		<Unit filename="kernel/debug.h" />
 		<Unit filename="kernel/error.cpp" />
 		<Unit filename="kernel/error.h" />
 		<Unit filename="kernel/fs/disk.cpp" />
@@ -77,7 +79,6 @@
 		<Unit filename="kernel/screen.cpp" />
 		<Unit filename="kernel/screen.h" />
 		<Unit filename="kernel/sepples.cpp" />
-		<Unit filename="kernel/sepples.h" />
 		<Unit filename="kernel/std/limits.h" />
 		<Unit filename="kernel/std/types.h" />
 		<Unit filename="kernel/supc++/divdi3.cpp" />

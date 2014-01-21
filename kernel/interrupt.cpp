@@ -15,6 +15,7 @@
 //#include "console.h"
 //#include "rtc.h"
 //#include <pic.h>
+#include <debug.h>
 
 extern "C" void isr_default_int(void)
 {
@@ -33,7 +34,67 @@ extern "C" void isr_exc_DIV0(void)
 
 extern "C" void isr_exc_DEBUG(void)
 {
-	error("Debug interrupt received\n");
+	u32 dr6, nReg;
+	u32* addr;
+	asm("   mov %%dr6, %%eax \n\
+            mov %%eax, %0":"=m"(dr6));
+    clearBreakpointDR6();
+
+    if ((dr6 & 0b1111) == 0) // If this wasn't caused by a breakpoint, return
+        return;
+    else if (dr6 & 0b0001)
+    {
+        nReg = 0;
+        asm("   mov %%dr0, %%eax \n\
+                mov %%eax, %0":"=m"(addr));
+    }
+    else if (dr6 & 0b0010)
+    {
+        nReg = 1;
+        asm("   mov %%dr1, %%eax \n\
+                mov %%eax, %0":"=m"(addr));
+    }
+    else if (dr6 & 0b0100)
+    {
+        nReg = 2;
+        asm("   mov %%dr2, %%eax \n\
+                mov %%eax, %0":"=m"(addr));
+    }
+    else if (dr6 & 0b1000)
+    {
+        nReg = 3;
+        asm("   mov %%dr3, %%eax \n\
+                mov %%eax, %0":"=m"(addr));
+    }
+    disableBreakpoint(nReg);
+
+    bool mallocReady = gPaging.isMallocReady();
+    bool isMetadata = gPaging.isChunkMetadata((struct kmallocHeader*)addr);
+    if (!mallocReady && isMetadata)
+    {
+        u32 size = ((struct kmallocHeader*)addr)->size;
+        if (!size) // If the size is null, malloc/free is breaking the chunks
+        {
+            gPaging.printChunks();
+            fatalError("#DEBUG: 0x%x (metadata) nulled with malloc not ready\n",addr);
+        }
+        else
+            error("#%d",nReg); // Malloc did nothing wrong (as far as we know) at BP nReg
+    }
+    else if (!mallocReady && !isMetadata)
+    {
+        gPaging.printChunks();
+        fatalError("#DEBUG: 0x%x (not metadata) accessed with malloc not ready\n",addr);
+    }
+    else if (mallocReady && isMetadata)
+    {
+        gPaging.printChunks();
+        fatalError("#DEBUG: 0x%x (metadata) accessed with malloc ready\n",addr);
+    }
+    else if (mallocReady && !isMetadata)
+        error("@%d", nReg); // Someone else than malloc accessed non-metadata. Everything's fine.
+
+    enableBreakpoint(nReg);
 }
 
 extern "C" void isr_exc_BP(void)
@@ -218,7 +279,7 @@ extern "C" void isr_kbd_int(void)
 		{
         case 0x00: // ESC
             if (ctrl_enable)        reboot(); // CTRL+ESC to reboot
-            else if (alt_enable)    halt(); // ALT+ESC to halt
+            halt(); // ESC to halt
             break;
 		case 0x29: // LEFT SHIFT
 			lshift_enable = 1;

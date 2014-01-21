@@ -2,6 +2,7 @@
 #include <io.h>
 #include <paging.h>
 #include <screen.h>
+#include <error.h> // For debugging
 
 namespace IO
 {
@@ -60,24 +61,24 @@ namespace IO
             return count;
         }
 
-        /*
-         * Read count bytes on disk
-         */
-        int diskRead(int drive, int offset, char *buf, int count)
+        // Read count bytes on disk
+        int diskRead(int drive, u64 offset, char *buf, u64 count)
         {
             char *blBuffer;
-            int blBegin, blEnd, blocks;
+            u32 blBegin, blEnd, blocks;
 
             blBegin = offset / 512;
             blEnd = (offset + count) / 512;
             blocks = blEnd - blBegin + 1;
 
+            //gTerm.printf("diskRead: offset %p, size %p\n", offset, count);
+
             blBuffer = (char *) gPaging.kmalloc(blocks * 512);
 
             blRead(drive, blBegin, blocks, blBuffer);
             memcpy(buf, (char *) (blBuffer + offset % 512), count);
-            gPaging.kfree(blBuffer);
 
+            gPaging.kfree(blBuffer);
             return count;
         }
 

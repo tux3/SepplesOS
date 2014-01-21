@@ -18,7 +18,7 @@ Paging::Paging()
 void Paging::init(u32 highMem)
 {
     unsigned int page, pageLimit;
-    struct vmArea *p;
+//    struct vmArea *p;
 
     // Number of the last page
     pageLimit = (highMem * 1024) / PAGESIZE;
@@ -282,7 +282,7 @@ char* Paging::getPAddr(char *vAddr)
 
 void Paging::printStats()
 {
-    checkAllocChunks(); // We wouldn't want to display wrong info, better check that everything is clean first.
+    checkChunks(); // We wouldn't want to display wrong info, better check that everything is clean first.
 
     // Count how many free physical pages we have
     unsigned freePMem = 0;
@@ -320,7 +320,7 @@ void Paging::printStats()
     delete buf;
 }
 
-void Paging::checkAllocChunks()
+void Paging::checkChunks()
 {
     u32 totalSize=0;
 
@@ -334,8 +334,9 @@ void Paging::checkAllocChunks()
             break;
         else if (chunk > (struct kmallocHeader *) curKernHeap)
         {
-            fatalError("checkAllocChunks: chunk on 0x%x while end of malloc heap is on 0x%x\n",chunk, curKernHeap);
+            error("checkAllocChunks: chunk on 0x%x while end of malloc heap is on 0x%x\n",chunk, curKernHeap);
             printChunks();
+            halt();
         }
 
         // If a chunk has a null size, try to repair it
@@ -343,7 +344,7 @@ void Paging::checkAllocChunks()
         {
             error("checkAllocChunks: Corrupted chunk on 0x%x with null size (heap 0x%x) !\n", chunk, curKernHeap);
             if (chunk == (struct kmallocHeader *) KERN_HEAP)
-                fatalError("The first chunk is corrupted. Can't fix.\n");
+                fatalError("checkAllocChunks: The first chunk is corrupted. Can't fix.\n");
             else
             {
                 oldChunk->size += sizeof(struct kmallocHeader); // The previous block now overwites this one
@@ -389,6 +390,37 @@ void Paging::printChunks()
         if (newline)    error("\n");
         else            error("\t\t");
         newline = !newline;
+        if (!chunk->size)
+        {
+            error("printChuncks: Chunk with null size. Returning.\n");
+            return;
+        }
+        chunk = (struct kmallocHeader *)((int)chunk + chunk->size); // Next
+    }
+}
+
+bool Paging::isChunkMetadata(struct kmallocHeader* addr)
+{
+    struct kmallocHeader *chunk = (struct kmallocHeader *) KERN_HEAP;
+    for (;;) // Check all the chunks, break at the end
+    {
+        if (chunk == addr)
+            return true;
+
+        // If we're at/after the end, or after addr, return
+        if (chunk == (struct kmallocHeader *) curKernHeap || chunk > addr)
+            return false; // This isn't metadata
+        else if (chunk > (struct kmallocHeader *) curKernHeap)
+        {
+            error("isChunkMetadata: chunk ends after curKernHeap. Returning\n");
+            return false;
+        }
+
+        if (!chunk->size)
+        {
+            error("isChunkMetadata: Chunk with null size. Returning.\n");
+            return false;
+        }
         chunk = (struct kmallocHeader *)((int)chunk + chunk->size); // Next
     }
 }
@@ -397,7 +429,7 @@ struct kmallocHeader* Paging::ksbrk(unsigned npages)
 {
     if (npages == 0)
     {
-        //error("ksbrk: Called with npages == 0\n");
+        error("ksbrk: Called with npages == 0\n");
         return (struct kmallocHeader *) -1;
     }
 
@@ -414,7 +446,7 @@ struct kmallocHeader* Paging::ksbrk(unsigned npages)
     chunk = (struct kmallocHeader *) curKernHeap;
 
     // Alloc a free page
-    for (int i = 0; i < npages; i++)
+    for (unsigned i = 0; i < npages; i++)
     {
         pAddr = getPageFrame();
         if ((int)pAddr <= 0)
@@ -488,7 +520,9 @@ char* Paging::kmalloc(unsigned long size)
         }
         else if (chunk > (struct kmallocHeader *) curKernHeap)
         {
-            fatalError("kmalloc() : chunk on 0x%x while end of malloc heap is on 0x%x !\n",(u32)chunk, (u32)curKernHeap);
+            error("kmalloc() : chunk on 0x%x while end of malloc heap is on 0x%x !\n",(u32)chunk, (u32)curKernHeap);
+            printChunks();
+            halt();
         }
     }
     //error("kmalloc: using chunk at 0x%x, size 0x%x (before resize)\n", chunk, chunk->size); DEBUG info
@@ -531,6 +565,11 @@ void Paging::kfree(void *vAddr)
     // Free the allocated block
     chunk = (struct kmallocHeader *) ((char*)vAddr - sizeof(struct kmallocHeader));
     chunk->used = 0;
+//    if (!isChunkMetadata(chunk))
+//    {
+//        printChunks();
+//        fatalError("kfree: vAddr 0x%x is not pointing to the start of a chunk\n",vAddr);
+//    }
 
     kmallocUsed -= chunk->size;
 
@@ -538,9 +577,18 @@ void Paging::kfree(void *vAddr)
     while ((other = (struct kmallocHeader *) ((char *) chunk + chunk->size))
            && other < (struct kmallocHeader *) curKernHeap
            && other->used == 0)
+    {
         chunk->size += other->size;
         if (!chunk->size)
-            fatalError("kfree() : chunk size set to 0 !\n");
+            fatalError("kfree: chunk size set to 0 !\n");
+
+        if (!other->size)
+        {
+            error("kfree: Corrupted chunk with null size !\n");
+            printChunks();
+            halt();
+        }
+    }
 
     mallocReady = true;
 }

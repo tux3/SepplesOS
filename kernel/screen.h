@@ -98,6 +98,13 @@ namespace IO
                     itoa((i64)value, buf, 16);
                     _printf(buf);
                 }
+                else if(*format == 'p')
+                {
+                    char buf[32];
+                    utoa((u64)value, buf, 16);
+                    put('0'); put('x');
+                    _printf(buf);
+                }
                 else if(*format == 'b')
                 {
                     char buf[32];

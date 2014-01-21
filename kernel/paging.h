@@ -83,10 +83,14 @@ public:
 
     char* kmalloc(unsigned long size); ///< Alloc heap memory for the kernel and returns a pointer to it
     void kfree(void* vAddr); ///< Frees a block allocated with kmalloc
-    struct kmallocHeader* ksbrk(unsigned npages); ///< Alloc a n-pages-sized chunk on the heap for kmalloc
 
-    void checkAllocChunks(); ///< Checks all the memory chunks in the heap for inconsistencies.
-    void printChunks(); ///< Print the list of malloc chunks
+    // Debug
+    void checkChunks(); ///< Checks all the memory chunks in the heap for inconsistencies. Will try to repair them.
+    void printChunks(); ///< Print the list of malloc chunks. Will not try to repair them.
+    bool isChunkMetadata(struct kmallocHeader* addr); ///< True if addr points to the START of the metadata. If it points to the middle of the metadata, we'll return false.
+
+protected:
+    struct kmallocHeader* ksbrk(unsigned npages); ///< Alloc a n-pages-sized chunk on the heap for kmalloc
 
 private:
     //llist<struct vmArea*> kernFreeVm; ///< List of the kernel's free pages

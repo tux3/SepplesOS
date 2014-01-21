@@ -10,6 +10,7 @@ char* strcat(char* dest, const char* src); // Concatenate src in dest
 char* strchr (const char* s, int c); // Return a pointer to the first occurence of c in str
 
 char* itoa(i64 value, char* result, int base);
+char* utoa(u64 value, char* result, int base);
 i64 atoi ( const char * str );
 void reverse(char s[]); // Reverse a char[]
 

@@ -71,9 +71,9 @@ namespace IO
             u32 sFirstIno;	/* First inode useable for standard files */
             u16 sInodeSize;	/* Inode size */
             u16 sBlockGroupNr;	/* Block group hosting this superblock structure */
-            u32 sFeatureCompat;
-            u32 sFeatureIncompat;
-            u32 sFeatureRoCompat;
+            u32 sFeatureCompat; // Optional features (ext3 flag is here
+            u32 sFeatureIncompat; // Required features to read/write
+            u32 sFeatureRoCompat; // Required features to write. If you don't support them, mount as readonly.
             u8 sUuid[16];		// Volume id
             char sVolumeName[16];	// Volume name
             char sLastMounted[64];	// Path where the file system was last mounted
@@ -178,8 +178,8 @@ namespace IO
         #define EXT2_INUM_ROOT	2
 
         struct ext2Disk* ext2GetDiskInfo(const int device, const struct partition&);
-        struct ext2SuperBlock* ext2ReadSb(struct ext2Disk *, int sPart);
-        struct ext2GroupDesc* ext2ReadGd(struct ext2Disk *, int sPart);
+        struct ext2SuperBlock* ext2ReadSb(struct ext2Disk *, u64 sPart);
+        struct ext2GroupDesc* ext2ReadGd(struct ext2Disk *, u64 sPart);
 
         struct ext2Inode* ext2ReadInode(const struct ext2Disk *, const int);
         char* ext2ReadFile(const struct ext2Disk *, const struct ext2Inode *);

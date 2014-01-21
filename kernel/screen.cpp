@@ -22,8 +22,6 @@ namespace IO
         // Start with the log disabled
         logEnabled=false;
         m_logBase=nullptr;
-
-        return;
     }
 
     bool VGAText::isLogEnabled()
@@ -34,8 +32,14 @@ namespace IO
     void VGAText::enableLog(bool state)
     {
         bool IF = gti; cli; // Screen operations should be atomic
-        if (state)
+        if (state && !logEnabled)
         {
+            if (!gPaging.isMallocReady())
+            {
+                error("enableLog: malloc isn't ready, can't enable\n");
+                if (IF) sti;
+                return;
+            }
             // Init the log with the current state of the screen
             if (m_logBase) // If the last log wasn't free'd, free it now
                 delete[] m_logBase;
@@ -43,9 +47,9 @@ namespace IO
             m_logCur = m_logBase;
             m_logLim = m_logBase + 2*m_width*m_height;
             memcpy((char*)m_logBase, (char*)m_memBase, 2*m_width*m_height);
-            logEnabled=true;
+            logEnabled=true;;
         }
-        else
+        else if (!state && logEnabled)
         {
             // Is the paging is ready, free the log now
             if (gPaging.isMallocReady())
@@ -82,26 +86,25 @@ namespace IO
 
     void VGAText::setCurStyle(char txtColor, bool txtHighlight, char bgdColor, bool blink)
     {
+        bool IF = gti; cli; // Screen operations should be atomic
         // 8   7                4 3          0
         // |blk|background color|i|text color|
         int style = 0b00000000;
 
-        if (blink)
-            style += 0b10000000;
-        if (txtHighlight)
-            style += 0b00001000;
+        if (blink)          style += 0b10000000;
+        if (txtHighlight)   style += 0b00001000;
         style += ((bgdColor&0b111) << 4) + (txtColor&0b111);
-
         m_curStyle = style;
-
-        //printf("Style : %b\n", style);
+        if (IF) sti;
     }
 
     void VGAText::moveCursor(int x, int y)
     {
+        bool IF = gti; cli; // Screen operations should be atomic
         if (((x<0 || y<0) && (x!=-1 || y!=-1)) || x > m_width || y > m_height)
         {
             error("VGAText::moveCursor: Invalid position (%d,%d)\n",x,y);
+            if (IF) sti;
             return;
         }
 
@@ -120,8 +123,7 @@ namespace IO
         // cursor HIGH port to vga INDEX register
         outb(0x3d4, 0x0e);
         outb(0x3d5, (u8) (c_pos >> 8));
-
-        return;
+        if (IF) sti;
     }
 
     void VGAText::showCursor()
@@ -148,6 +150,7 @@ namespace IO
 
     void VGAText::put(const char c)
     {
+        bool IF = gti; cli; // Screen operations should be atomic
         int videoOff;
 
         // We can't write to the pos of the cursor if we're scrolled up.
@@ -192,6 +195,7 @@ namespace IO
 
         if (m_curY >= m_height)
             newLines(1 + m_curY - m_height); // Add new lines
+        if (IF) sti;
     }
 
     void VGAText::clear()
@@ -215,18 +219,25 @@ namespace IO
 
     void VGAText::scroll(int n)
     {
+        bool IF = gti; cli; // Screen operations should be atomic
         if (!logEnabled)
         {
             error("VGAText::scroll: Can't scroll with the log disabled.\n");
+            if (IF) sti;
             return;
         }
-
         if (!n)
+        {
+            if (IF) sti;
             return;
+        }
         else if (n<0) // Move n lines back in the log and render to the screen
         {
             if (m_logCur == m_logBase) // Can't scroll higher than the top
+            {
+                if (IF) sti;
                 return;
+            }
             hideCursor(); // While we're scrolled up, the cursor disappears
             m_logCur += n * 2 * m_width;
             if (m_logCur < m_logBase)
@@ -244,16 +255,20 @@ namespace IO
             }
             memcpy((char*) m_memBase, (char*)m_logCur, 2 * m_width * m_height); // Render
         }
+        if (IF) sti;
     }
 
     void VGAText::scrollDown()
     {
+        bool IF = gti; cli; // Screen operations should be atomic
         m_logCur = m_logLim - 2*m_width*m_height;
         memcpy((char*) m_memBase, (char*)m_logCur, 2 * m_width * m_height); // Render
+        if (IF) sti;
     }
 
     void VGAText::newLines(unsigned n)
     {
+        bool IF = gti; cli; // Screen operations should be atomics
         u8 *videomem, *membuf;
 
         // Fix the cursor as soon as possible.
@@ -305,6 +320,7 @@ namespace IO
                 *(ptr+1) = CUR_WHITE;
             }
         }
+        if (IF) sti;
     }
 
     void VGAText::rubout()

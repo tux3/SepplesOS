@@ -24,13 +24,19 @@ namespace FS
         case FSTYPE_NTFS:
             return "ntfs";
         case FSTYPE_FAT32_CHS:
-            return "FAT32-chs";
+            return "FAT32-CHS";
         case FSTYPE_FAT32_LBA:
-            return "FAT32-lba";
+            return "FAT32-LBA";
         case FSTYPE_SWAP:
             return "linux swap";
+        case FSTYPE_LINUX_NATIVE:
+            return "linux (unknown)";
         case FSTYPE_EXT2:
-            return "ext2/ext3";
+            return "ext2";
+        case FSTYPE_EXT3:
+            return "ext3";
+        case FSTYPE_EXT4:
+            return "ext4";
         default:
             return "unknown";
         }
@@ -68,6 +74,7 @@ namespace FS
                 // Add the partition
                 struct partition part;
                 diskRead(driveId, (0x01BE + (16 * i)), (char *) &part, 16);
+                part.diskId = driveId;
                 part.id=i+1;
                 part.fsId = detectFsType(part);
                 //if (part.fsId != FSTYPE_UNKNOWN && part.fsId != FSTYPE_FREE && part.size != 0) // Add only if it's valid
@@ -80,14 +87,16 @@ namespace FS
 			part.bootable = 0;
 			part.sLba=0;
 			part.fsId=FSTYPE_EXT2;
-			part.diskId=0;
+			part.diskId=driveId;
 			part.id=1;
 			part.size=0;
 			struct ext2Disk* hd = (struct ext2Disk *) gPaging.kmalloc(sizeof(struct ext2Disk));
             hd->device = 0;
             hd->part = part;
-			if (ext2ReadSb(hd, 0)->sMagic == 0xef53)
+            struct ext2SuperBlock* sb = ext2ReadSb(hd, 0);
+			if (sb->sMagic == 0xef53)
                 partList << part;
+            delete sb;
             delete hd;
         }
 
@@ -109,7 +118,7 @@ namespace FS
 
     bool FilesystemManager::mount(const struct partition& part) /// Mount the given partition
     {
-        if (part.fsId == FSTYPE_EXT2)
+        if (part.fsId == FSTYPE_EXT2 || part.fsId == FSTYPE_EXT3 || part.fsId == FSTYPE_EXT4)
         {
             // Find the first free number in /dev and create the corresponding node (e.g : /dev/1)
             u32 i=0;
@@ -127,7 +136,10 @@ namespace FS
             // Read the ext2 partition
             struct ext2Disk* hd = ext2GetDiskInfo(part.diskId, part);
             if (!hd) // ext2GetDiskInfo() returns 0 on errors
+            {
+                error("mount: ext2GetDiskInfo failed\n");
                 return false;
+            }
 
             // Read the inode at the root of the partition
             struct ext2Inode* inode = ext2ReadInode(hd, EXT2_ROOT_INUM);
@@ -139,7 +151,10 @@ namespace FS
             return true;
         }
         else
+        {
+            error("mount: Unsupported filesystem\n");
             return false;
+        }
     }
 
     // detect_fs_type() : Detect the type of the partition's filesystem (ext2, fat32, ...)
@@ -159,15 +174,16 @@ namespace FS
             return FSTYPE_FAT32_LBA;
         else if (part.fsId == 0x83) // Linux native (ext*)
         {
-            // Ext2/Ext3 (Ext3 = Ext2 + Journal, but they are both completely compatible in both ways
-            struct ext2SuperBlock *sb;
-            sb = (struct ext2SuperBlock *) gPaging.kmalloc(sizeof(struct ext2SuperBlock));
-            diskRead(0, part.sLba + 1024, (char *) sb, (sizeof(struct ext2SuperBlock)));
-            if (sb->sMagic == 0xef53) // ext2/ext3 magic
-                return FSTYPE_EXT2;
-            else
-                return FSTYPE_LINUX_NATIVE;
-            gPaging.kfree(sb);
+            int type = FSTYPE_LINUX_NATIVE;
+            struct ext2SuperBlock *sb = new ext2SuperBlock;
+            diskRead(part.diskId, (u64)part.sLba*512 + 1024, (char *) sb, sizeof(struct ext2SuperBlock));
+            if (sb->sMagic == 0xef53)       type = FSTYPE_EXT2;
+            else                            return FSTYPE_LINUX_NATIVE;
+
+            if (sb->sFeatureCompat & 0x4)   type = FSTYPE_EXT3;
+
+            delete sb;
+            return type;
         }
 
         // Unknown filesystem (couldn't detect)
