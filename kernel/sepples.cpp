@@ -79,10 +79,10 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
     gTerm.printf("%d partitions detected\n", partList.size());
     for(u8 i=0; i<partList.size(); i++) /// Ne pas oublier le cast A L'INTERIEUR DU CALCUL, c'est "(uint64)s_lba * 512", sinon int overflow pendant la multiplication et toIEC recoit n'importe quoi
         gTerm.printf("Partition %d : start:%s, size:%s, type:%s\n", partList[i].id, toIEC(buf,64,(u64)partList[i].sLba*512), toIEC(buf,32,(u64)partList[i].size*512), partList[i].getTypeName());
-    delete buf; buf=nullptr;
+    delete[] buf; buf=nullptr;
     gTerm.setCurStyle();
 
-    /// TEST: Mount the first ext2/ext3 partition and read hello.txt
+    /// TEST: Mount the first ext2/ext3 partition and read /etc/motd
     // Remove partitions we can't read
     for (unsigned i=0; i<partList.size();)
         if (partList[i].fsId != FSTYPE_EXT2 && partList[i].fsId != FSTYPE_EXT3 && partList[i].fsId != FSTYPE_EXT4)
@@ -120,15 +120,15 @@ extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
 	return;
 }
 
-/// TODO: Add an ext2 partition to oldlaptop and play with it !
-/// TODO: Implement multitasking
-/// TODO: Implement reading partitions tables other than the MBR.
-/// TODO: Have FilesystemManager::mount call NodeEXT2::mount instead of doing it himself
 
-/// => Fix the buggy Ext2 driver.
 /**
-
-Use printChunks every time there's something weird going on
-Use the breakpoints on the chunk metadata that gets overwritten to find where it happens
+TODO: Implement multitasking
+TODO: Implement reading partitions tables other than the MBR.
+TODO: Have FilesystemManager::mount call NodeEXT2::mount instead of doing it himself
+TODO: Replace the "Page Heap" with page-aligned kmalloc chunks of PAGESIZE bits.
+        The get/releasePageFromHeap functions should make a page-aligned alloc with the kmalloc chunks.
+        They just need to either insert a padding chunk and a page-aligned chunk
+        or split a free block that crosses a page boundary and ends at or after the next page boundary
+        Basically, if a block crosses two page-aligned boundaries, then we can use it
 
 **/

@@ -253,7 +253,10 @@ namespace FS
                         current = current->getChilds()[i];
                     }
                 if (!found)
+				{
+					delete[] name;
                     return nullptr;
+				}
             }
 
             beg_p = end_p;
@@ -261,7 +264,7 @@ namespace FS
                 beg_p++;
             end_p = beg_p + 1;
 
-            delete name;
+            delete[] name;
         }
         return current;
     }

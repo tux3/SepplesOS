@@ -25,8 +25,8 @@ IDT 32-255 : The rest
 #include <std/types.h>
 #include <memmap.h>
 
-#define INTGATE  0x8E00		// For interrupts
-#define TRAPGATE 0xEF00		// For syscalls
+#define INTGATE  0x8E00		// For 'regular' interrupts, can't be preempted
+#define TRAPGATE 0xEF00		// For syscalls, can be preempted (by another interrupt)
 
 // Segment descriptor. Binds an IRQ (coming from the PIC, by the CPU), to an ISR
 struct IDTDesc

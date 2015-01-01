@@ -45,6 +45,10 @@ void Paging::init(u32 highMem)
     for (u16 i = 0; i < 639; i++) // 639*PAGESIZE + PAGESIZE_BIG = 0x67F000 = KERN_IDENTITY_END
         *((u32*)KERN_PAGE_TABLES+4*i) = ((PAGESIZE_BIG + PAGESIZE*i) | (PAGE_PRESENT | PAGE_WRITE));
 
+    // Init all the other pages as non-present
+    for (u32 i=639; i<1024*1022; i++) // 1024 entries/table. No table 0 (first page is 4MiB) and no 1023 (mirroring trick)
+        *((u32*)KERN_PAGE_TABLES+4*i) = ((PAGESIZE_BIG + PAGESIZE*i) | PAGE_WRITE);
+
     // Enable pagination. Will enable malloc, free, new and delete
     asm("	mov %0, %%eax \n \
         mov %%eax, %%cr3 \n \
@@ -317,7 +321,7 @@ void Paging::printStats()
         asm("mov %%esp, %0":"=m"(esp):);
         gTerm.printf("Stack (0x%x) : %s used, %s free\n", esp, toIEC(buf,32,KERN_STACK-esp), toIEC(buf+32,32,esp-KERN_STACK_LIM));
     }
-    delete buf;
+    delete[] buf;
 }
 
 void Paging::checkChunks()

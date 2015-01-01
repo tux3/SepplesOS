@@ -28,7 +28,7 @@
 //#define KERN_PAGE_HEAP		0x00800000
 //#define KERN_PAGE_HEAP_LIM	0x10000000
 
-// All pages between START and END are mapped directly to phisical address spaces
+// All pages between START and END are mapped directly to physical address spaces
 #define KERN_IDENTITY_START	0x00000000
 #define KERN_IDENTITY_END	0x0067F000 // Must be 4kiB (pagesize) aligned
 
