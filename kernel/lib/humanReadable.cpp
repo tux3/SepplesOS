@@ -3,7 +3,7 @@
 // change to 1000 for SI-compatible numbers
 #define KILOBYTE 1024
 
-char *toIEC(char *buf, u32 bufSize, u64 size)
+u8* toIEC(u8* buf, u32 bufSize, u64 size)
 {
   static char indexes[] = " KMGTPE";
   // clean up the interface if you're using this
@@ -27,7 +27,7 @@ char *toIEC(char *buf, u32 bufSize, u64 size)
   return buf + cidx + 1;
 }
 
-char *toSI(char *buf, u32 bufSize, u64 size)
+u8* toSI(u8* buf, u32 bufSize, u64 size)
 {
   static char indexes[] = " kMGTPE";
   // clean up the interface if you're using this

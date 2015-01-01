@@ -1,0 +1,7 @@
+*.o
+*.elf
+*.iso
+*.img
+*~
+*.user*
+isobuild/

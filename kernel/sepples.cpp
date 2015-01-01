@@ -1,134 +1,97 @@
-#include <error.h>
-#include <gdt.h>
-#include <keyboard.h>
-#include <idt.h>
 #include <multiboot.h>
-#include <paging.h>
-#include <pic.h>
-#include <screen.h>
-#include <process.h>
-#include <debug.h>
-#include <fs/filesystem.h>
+#include <vga/vgatext.h>
 #include <lib/humanReadable.h>
-#include <lib/llist.h>
+#include <mm/paging.h>
+#include <mm/malloc.h>
+#include <mm/memzero.h>
+#include <arch/gdt.h>
+#include <arch/idt.h>
+#include <arch/pic.h>
+#include <arch/pinio.h>
+#include <disk/disk.h>
+#include <disk/partTable.h>
+#include <disk/vfs.h>
+#include <disk/ext2.h>
+#include <proc/tss.h>
+#include <proc/process.h>
+#include <keyboard.h>
+#include <error.h>
+#include <debug.h>
 
-// Singletons
-IO::VGAText gTerm;
-IO::Keyboard gKbd;
-Paging gPaging;
-TaskManager gTaskmgr;
-IO::FS::FilesystemManager gFS;
+using term = ::VGAText;
 
-// Entry point of the kernel, called from boot.asm
-extern "C" void boot(u32 mbmagic, struct multiboot_info *mbi)
+extern "C" int boot(int magic, multiboot_info* multibootHeader)
 {
-    using namespace IO;
-    using namespace IO::FS;
+    term::clear();
+    term::print("Sepples OS 2.0 booting\r\n");
 
-    // Prepare kernel and print some info
-    gPaging = Paging();
-    gTerm = VGAText();
-    gKbd = Keyboard();
-	gTerm.clear();
-	gTerm.setCurStyle(VGAText::CUR_GREEN);
-	gTerm.print("Sepples OS is booting ...\n");
-    checkMbi(mbmagic, mbi); // Will reset gTerm's style. Will halt if the bootloader isn't multiboot-compliant
+    checkMultiboot(magic, multibootHeader);
 
-    // Set up and load descriptor tables
-    IDT idtMgr;
-    idtMgr.init();
-    GDT gdtMgr;
-    gdtMgr.init();
-    gTerm.print("IDT and GDT loaded\n");
+    Paging::init(getAvailableMem(multibootHeader));
+    reserveMbiMemmap(multibootHeader);
 
-    // Set up the PIC (Programmable Interrupt Controller)
-    PIC picMgr;
-    picMgr.init();
-    picMgr.setFrequency(50);
-    gTerm.print("PIC set\n");
+    IDT::init();
+    TSS::init();
+    GDT::init();
+    PIC::init();
+    PIC::setFrequency(25);
+    Malloc::init();
+    term::enableLog();
 
-    // Enable paging and logging
-    gPaging.init(mbi->high_mem);
-    bool result = reserveMbiMemmap(mbi);
-    gTerm.enableLog(true);
-    if (result)
+    ATA::init();
+    VFS::init();
+    ext2::initfs();
+    PartTable::mountAll(0);
+
+    TaskManager::init();
+
+    i64 lastNProc = TaskManager::getNProc();
+    Node* hello = VFS::resolvePath("/0/bin/hello.elf");
+    if (hello)
     {
-        gTerm.setCurStyle(IO::VGAText::CUR_BLUE,true); // printMbiMemmap will reset the style
-        gTerm.print("Memory map :\n");
-        printMbiMemmap(mbi);
-        gTerm.setCurStyle();
+        term::print("Starting \"/0/bin/hello.elf\"\n");
+        TaskManager::loadTask(hello);
     }
-    gTerm.print("Paging enabled\n");
+    else
+        term::print("Failed to get path to hello.elf\n");
 
-    // Init taskmanager, enable interrupts
-    gTaskmgr = TaskManager();
-    gTaskmgr.init();
-    sti;
-    gTerm.showCursor(); // Interrupts are enabled, if we can write, we'll want to see the cursor
-    gTerm.print("Task manager started, interrupts enabled\n");
-
-    // Init VFS
-    gFS = FilesystemManager();
-    gFS.init();
-    gTerm.print("VFS loaded\n");
-    llist<struct partition> partList = gFS.getPartList();
-
-    // List partitions
-    char* buf = new char[64];
-    gTerm.setCurStyle(IO::VGAText::CUR_BLUE,true);
-    gTerm.printf("%d partitions detected\n", partList.size());
-    for(u8 i=0; i<partList.size(); i++) /// Ne pas oublier le cast A L'INTERIEUR DU CALCUL, c'est "(uint64)s_lba * 512", sinon int overflow pendant la multiplication et toIEC recoit n'importe quoi
-        gTerm.printf("Partition %d : start:%s, size:%s, type:%s\n", partList[i].id, toIEC(buf,64,(u64)partList[i].sLba*512), toIEC(buf,32,(u64)partList[i].size*512), partList[i].getTypeName());
-    delete[] buf; buf=nullptr;
-    gTerm.setCurStyle();
-
-    /// TEST: Mount the first ext2/ext3 partition and read /etc/motd
-    // Remove partitions we can't read
-    for (unsigned i=0; i<partList.size();)
-        if (partList[i].fsId != FSTYPE_EXT2 && partList[i].fsId != FSTYPE_EXT3 && partList[i].fsId != FSTYPE_EXT4)
-            partList.removeAt(i);
-        else
-            i++;
-    if (partList.size() && gFS.mount(partList[0]))
+    Node* sh = VFS::resolvePath("/0/bin/sh.elf");
+    if (sh)
     {
-        gTerm.setCurStyle(IO::VGAText::CUR_GREEN,true);
-        gTerm.print("Partition mounted, reading the MOTD : \n");
-        gTerm.setCurStyle(IO::VGAText::CUR_CYAN,true);
-        NodeEXT2* node = (NodeEXT2*)gFS.pathToNode("/dev/0/etc/motd");
-        if (node != nullptr)
+        term::print("Starting \"/0/bin/sh.elf\"\n");
+        TaskManager::loadTask(sh);
+    }
+    else
+        term::print("Failed to get path to sh.elf\n");
+
+    sti;
+
+    Keyboard::setLogInput(true);
+
+    bool giveup=false;
+    while (!giveup)
+    {
+        if (TaskManager::getNProc() != lastNProc || !lastNProc)
         {
-            u64 size = node->getSize();
-            if (size)
+            lastNProc = TaskManager::getNProc();
+            if (!lastNProc)
             {
-                char* buf = new char[size+1];
-                buf[size]='\0';
-                node->open();
-                node->read(buf, size);
-                node->close();
-                gTerm.print(buf);
+                term::setCurStyle(VGAText::CUR_YELLOW);
+                term::print("All tasks are dead, starting a shell\n");
+                term::setCurStyle();
+                if (!TaskManager::loadTask("/0/bin/sh.elf"))
+                {
+                    error("Failed to load task, giving up\n");
+                    giveup = true;
+                }
             }
         }
-        gTerm.setCurStyle();
     }
 
-    gTerm.print("Kernel sleeping ...\n");
-	while(1)
-	{
-        //asm("cli;")
-		asm("hlt;");
-	}
-	return;
+    term::printf("Kernel going to sleep...\n");
+    for(;;)
+    {
+        asm("hlt");
+    }
+    return 0;
 }
-
-
-/**
-TODO: Implement multitasking
-TODO: Implement reading partitions tables other than the MBR.
-TODO: Have FilesystemManager::mount call NodeEXT2::mount instead of doing it himself
-TODO: Replace the "Page Heap" with page-aligned kmalloc chunks of PAGESIZE bits.
-        The get/releasePageFromHeap functions should make a page-aligned alloc with the kmalloc chunks.
-        They just need to either insert a padding chunk and a page-aligned chunk
-        or split a free block that crosses a page boundary and ends at or after the next page boundary
-        Basically, if a block crosses two page-aligned boundaries, then we can use it
-
-**/

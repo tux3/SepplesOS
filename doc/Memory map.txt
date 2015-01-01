@@ -1,0 +1,19 @@
+Map of the virtual address space as used by Sepples OS 2.0 :
+The virtual address space is identity mapped to the physical space from 0x1000 to 0x24FFF
+When the PADDR column is not filled, the pages are identity mapped (paddr==vaddr)
+
+VADDR                   PADDR                   COMMENT
+----------------------+----------------------+---------------------------------------------------------------------------------------
+0x0 - 0xFFF           |                      |   Null page, used for nullptr #PF, and to protect the BDA/real mode IVT
+0x1000 - 0x1FFF       |                      |   Page Map Level 4 table (PML4)
+0x2000 - 0x2FFF       |                      |   Page Dir Pointer Table 0 (PDPT)
+0x3000 - 0x3FFF       |                      |   Page Directory 0 (PD)
+0x4000 - 0x4FFF       |                      |   Page Table 0 (PT)
+0x5000 - 0x57FF       |                      |   GDT
+0x5800 - 0x5FFF       |                      |   IDT
+0x6000 - 0x6FF8       |                      |   Ring0 interrupt stack
+0x7000 - 0x7FFF       |  Variable            |   Temporary map page
+0x8000 - 0x7FFF8      |                      |   Kernel (growing up) and stack (growing down), 380 kB should be enough for now
+0xB8000 - 0xB8FA0     |  0xB8000 - 0xB8FA0   |   VGA text framebuffer (assuming 80x25)
+0x100000 - 0xFFFFFFFF |  0x0 - 0xFFFFFFFF    |	 Free general purpose pages. The page bitmap itself is identity mapped.
+

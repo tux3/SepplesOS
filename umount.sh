@@ -1,2 +1,3 @@
 #/bin/bash
-gnome-terminal -x sudo umount mnt
+bash -c "sudo umount /dev/loop0p1"
+bash -c "sudo losetup -d /dev/loop0"

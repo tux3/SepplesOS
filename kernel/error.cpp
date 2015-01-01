@@ -1,32 +1,30 @@
 #include <error.h>
-#include <paging.h>
-#include <screen.h>
+#include <mm/malloc.h>
+#include <vga/vgatext.h>
 #include <power.h>
-
-using namespace IO;
 
 extern "C" void error(const char* msg)
 {
-    gTerm.setCurStyle(VGAText::CUR_RED); // Error style
-    if (!gPaging.isMallocReady() && gTerm.isLogEnabled())
+    VGAText::setCurStyle(VGAText::CUR_RED); // Error style
+    if (!Malloc::isMallocReady() && VGAText::isLogEnabled())
     {
-        gTerm.enableLog(false); // The log would use new/kmalloc, and we need to display the error anyway
-        gTerm.print("error: malloc isn't ready. VGAText log forcibly disabled.\n");
+        VGAText::enableLog(false); // The log would use new/kmalloc, and we need to display the error anyway
+        VGAText::print("error: malloc isn't ready. VGAText log forcibly disabled.\n");
     }
-    gTerm.print(msg);
-    gTerm.setCurStyle(); // Remet style normal
+    VGAText::print(msg);
+    VGAText::setCurStyle(); // Remet style normal
 }
 
 extern "C" void fatalError(const char* msg)
 {
-    gTerm.setCurStyle(VGAText::CUR_BLACK, false, VGAText::CUR_RED); // Critical error style
-    if (!gPaging.isMallocReady() && gTerm.isLogEnabled())
+    VGAText::setCurStyle(VGAText::CUR_BLACK, false, VGAText::CUR_RED); // Critical error style
+    if (!Malloc::isMallocReady() && VGAText::isLogEnabled())
     {
-        gTerm.enableLog(false); // The log would use new/kmalloc, and we need to display the error anyway
-        gTerm.print("fatalError: malloc isn't ready. VGAText log forcibly disabled.\n");
+        VGAText::enableLog(false); // The log would use new/kmalloc, and we need to display the error anyway
+        VGAText::print("fatalError: malloc isn't ready. VGAText log forcibly disabled.\n");
     }
-    gTerm.print(msg);
-    gTerm.setCurStyle(); // Remet style normal
+    VGAText::print(msg);
+    VGAText::setCurStyle(); // Remet style normal
     halt();
 }
 

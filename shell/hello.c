@@ -1,8 +1,8 @@
 int main()
 {
     const char* str = "Hello from userland!\n";
-    asm("   mov %0, %%rax\n\
-            mov %1, %%rbx\n\
-            syscall":"=m"(1),"=m"(str));
+    asm("   mov $0x10001, %%eax\n\
+            mov %0, %%ebx\n\
+            int $0x30"::"m"(str):"eax","ebx");
     return 0;
 }

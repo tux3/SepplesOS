@@ -1,0 +1,12 @@
+Malloc
+
+Our llist of chunks thing doesn't work if we can't keep it contiguous...
+We could have a "final" flag on the last chunk to indicate that it's not contiguous anymore
+Or we could force it to be contigous anyway. Wrap already-mapped pages in a chunk
+Now the problem is, how do we know that we can free it ?
+Keep a flag and check every time ? That could work.
+
+Keep a notOurs flag for chunks around already mapped pages. Make sure that the wrapping chunk is only around the already mapped pages.
+When we try to allocate a new chunk, if we encounter a chunk with this flag set, check that the corresponding pages are still used
+If they aren't, map the pages for ourselves and unset the flag. Merge with surrounding free chunks if possible.
+If a free chunk at the end of the chunk list crosses a page boundary, resize that chunk so that we can unmap that page.

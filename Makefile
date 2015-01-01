@@ -1,49 +1,47 @@
-#
-# Makefile pricinpal
-#
+PROJECT = sepples
+SRC_ASM = $(shell find . -name *.asm)
+SRC_CPP = $(shell find . -name *.cpp)
+OBJ_ASM = $(SRC_ASM:%.asm=%.o)
+OBJ_CPP = $(SRC_CPP:%.cpp=%.o)
+OBJ_KERNEL = kernel.elf
+ISO = $(PROJECT).iso
+BUILD_ISO = isobuild
+CXXFLAGS = -Os -Ikernel -nostdinc -nostdinc++ -std=c++14 -ffreestanding -fno-builtin -fno-rtti -nostdlib -fno-exceptions -nodefaultlibs -nostartfiles -fno-stack-protector -Wall -Wextra -Wunreachable-code
+GRUB_MENUENTRY = "Sepples OS"
+GRUB_MENUDELAY = 0
+GRUB_MODULES = "iso9660 multiboot configfile part_acorn part_amiga part_apple part_bsd part_dfly part_dvh part_gpt part_plan part_sun part_sunpc"
+GRUB_COMPRESS = no # no/gz/xz
 
-NAME=sepples
+%.o: %.asm
+	nasm -f elf64 $^
 
-# Les cibles .PHONY ne sont pas des fichiers à creer !
-.PHONY: kernel shell prepare-usb update-usb clean
+.PHONY: all clean mrproper
 
-# Si make sans cible ou make all, on recompil et on fait une iso
-all: clean $(NAME).iso
-
-# Compile un noyau, rend la cle bootable et copie le noyau dessus
-prepare-usb: $(NAME).iso
-	-mkdir /mnt/USB # Ignore les erreurs de creation de dossier (existe deja ?)
-	mount /dev/sdb1 /mnt/USB
-	grub-install --force --recheck --no-floppy --root-directory=/mnt/USB /dev/sdb
-	cp ./cdrom/BOOT/GRUB.CFG /mnt/USB/boot/grub/grub.cfg
-	cp ./cdrom/BOOT/$(NAME).ELF /mnt/USB/boot/$(NAME).elf
-	umount /mnt/USB
-	eject /dev/sdb
-	rmdir /mnt/USB
-
-# Copie le dernier noyau compile sur la cle
-update-usb: $(NAME).iso
-	-mkdir /mnt/USB # Ignore les erreurs de creation de dossier (existe deja ?)
-	mount /dev/sdb1 /mnt/USB
-	cp ./cdrom/BOOT/GRUB.CFG /mnt/USB/boot/grub/grub.cfg --remove-destination
-	cp ./cdrom/BOOT/$(NAME).ELF /mnt/USB/boot/$(NAME).elf --remove-destination
-	umount /mnt/USB
-	eject /dev/sdb
-	rmdir /mnt/USB
-
-kernel:
-	$(MAKE) -C kernel
-
-shell:
-	$(MAKE) -B -C shell all
-
-$(NAME).iso: kernel shell
-	./makegrub2cdimage.sh
-
-test: clean $(NAME).iso
-	-bochs -qf bochsrc-nodebug.txt -rc bochsdebug.txt
-
+all: $(ISO)
+	
 clean:
-	rm -f *.o bochs.log $(NAME).iso
-	$(MAKE) clean -C kernel
+	rm -f $(OBJ_ASM)
+	rm -f $(OBJ_CPP)
+	rm -f $(OBJ_KERNEL)
+	rm -rf ./$(BUILD_ISO)
 
+mrproper: clean
+	rm -f $(ISO)
+	
+$(OBJ_KERNEL): $(OBJ_ASM) $(OBJ_CPP)
+	ld -melf_x86_64 -static -Ttext=0x8000 -z max-page-size=0x1000 --entry=asmboot $^ -o $(OBJ_KERNEL)
+
+$(ISO): $(OBJ_KERNEL)
+	mkdir -p $(BUILD_ISO)/boot/grub
+	echo "set timeout=$(GRUB_MENUDELAY)\nmenuentry \"$(GRUB_MENUENTRY)\" {multiboot /boot/$(PROJECT).elf;boot}" > $(BUILD_ISO)/boot/grub/grub.cfg
+	cp $(OBJ_KERNEL) ./$(BUILD_ISO)/boot/$(PROJECT).elf
+	grub-mkrescue --compress=$(GRUB_COMPRESS) --install-modules=$(GRUB_MODULES) -o $(ISO) ./$(BUILD_ISO) 2>&1
+
+test: $(ISO)
+	bochs -qf bochsrc-nodebug.txt -rc bochsdebug.txt || return 0
+
+debug: CXXFLAGS += -g -Og
+debug: $(ISO)
+
+release: $(ISO)
+		

@@ -1,32 +1,29 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
-namespace IO
+class Keyboard
 {
-    class Keyboard
-    {
-        public:
-            Keyboard();
-            void scan(char* buf); ///< Read a line (buffered, waits for a  '\n')
-            void nget(char* buf, unsigned int n); ///< Read n characters
+    public:
+        Keyboard()=delete;
+        static void scan(char* buf); ///< Read a line (buffered, waits for a  '\n')
+        static void nget(char* buf, unsigned int n); ///< Read a line of max n characters, not counting the '\0'
 
-            void input(const char c); ///< Adds c to the input buffer. Mostly called by the keyboard interrupt handler.
+        static void input(const char c); ///< Adds c to the input buffer. Mostly called by the keyboard interrupt handler.
 
-        protected:
-            void unlock(); ///< Unlock and send characters to the standard output
+        static void setLogInput(bool state); ///< If state, forward every input character to VGAText
 
-        private:
-            bool ilock; ///< Lock for scan/nget. Signals the request to input(). Unlocked by input().
-            char* ubuf; ///< Ptr to the buffer to fill
-            unsigned int pos; ///< Position in the buffer
-            /// If >= 0 : Numbers of chars left to read for nget
-            /// If == -1 : We're in a scan
-            /// If == -2 : Send to the standard output (gTerm)
-            int stop;
-    };
+    protected:
+        static void unlock(); ///< Unlock and send characters to the standard output
+
+    private:
+        static volatile bool ilock; ///< Lock for scan/nget. Signals the request to input(). Unlocked by input().
+        static char* ubuf; ///< Ptr to the buffer to fill
+        static unsigned pos; ///< Position in the buffer
+        /// If >= 0 : Numbers of chars left to read for nget
+        /// If == -1 : We're in a scan
+        /// If == -2 : Send to the standard output (gTerm)
+        static int stop;
+        static bool logInput;
 };
-
-/// Singleton
-extern IO::Keyboard gKbd;
 
 #endif // KEYBOARD_H

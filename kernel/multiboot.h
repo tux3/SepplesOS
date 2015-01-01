@@ -1,7 +1,7 @@
 #ifndef _MULTIBOOT_H_
 #define _MULTIBOOT_H_
 
-#include <kernel/std/types.h>
+#include <std/types.h>
 
 struct boot_device
 {
@@ -57,7 +57,7 @@ struct multiboot_info
 	u32 apm_table;
 	u32 vbe_control_info;
 	u32 vbe_mode_info;
-	u16 vbe_mode;
+    u16 vbe_mode;
 	u16 vbe_interface_seg;
 	u16 vbe_interface_off;
 	u16 vbe_interface_len;
@@ -65,7 +65,7 @@ struct multiboot_info
 
 /// Print some info about the multiboot struct the bootloader gave us.
 /// Will halt if the bootloader isn't multiboot-compliant
-void checkMbi(u32 mbmagic, struct multiboot_info *mbi);
+void checkMultiboot(u32 mbmagic, struct multiboot_info *mbi);
 
 /// If a memory map is provided, reserve all the pages corresponding to reserved RAM and return true.
 /// If there's no memory map in the mbi, return false.
@@ -74,5 +74,8 @@ bool reserveMbiMemmap(struct multiboot_info *mbi);
 /// If a memory map is provided, print it
 /// If there's no memory map in the mbi, return false.
 bool printMbiMemmap(struct multiboot_info *mbi);
+
+/// Returns 0 on error
+unsigned long getAvailableMem(struct multiboot_info *mbi);
 
 #endif

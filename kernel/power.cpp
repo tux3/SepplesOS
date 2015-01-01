@@ -1,7 +1,7 @@
 #include <power.h>
 #include <error.h>
-#include <io.h>
-#include <memmap.h>
+#include <arch/pinio.h>
+#include <arch/idt.h>
 #include <std/types.h>
 
 // Attendre quelques microsecondes (environ)
@@ -21,7 +21,6 @@ void halt(void)
 	// Should never go there (but it still happens)
 	error("Computer woke up, looping...\n");
 	while(1) {asm("hlt");}
-
 }
 
 void reboot(void)
@@ -42,7 +41,7 @@ void reboot(void)
         outb(0xfe, 0x64); /* pulse reset low */
         udelay(50);
     }
-    //globalTerm.print("Keyboard reboot failure\n");
+    //globalVGAText::print("Keyboard reboot failure\n");
 
 
     // 2.CF9 reboot
@@ -51,13 +50,13 @@ void reboot(void)
     udelay(50);
     outb(cf9|6, 0xcf9); /* Actually do the reset */
     udelay(50);
-    //globalTerm.print("CF9 reboot failure\n");
+    //globalVGAText::print("CF9 reboot failure\n");
 
-    //globalTerm.print("Unable to reboot, last try ...\n");
-	//globalTerm.print("Triplefaulting happilly\n");
+    //globalVGAText::print("Unable to reboot, last try ...\n");
+	//globalVGAText::print("Triplefaulting happilly\n");
 	cli;
     for (u16 i=0; i<1024; i++) // Erase the IDT and GDT
-       *((u32*)(IDTBASE + i)) = 0;
+       *((u32*)(u64)(IDTBASE + i)) = 0;
     sti;
     asm("int $0"::);
 	//fatalError("OH SHI-");

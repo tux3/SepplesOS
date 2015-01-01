@@ -1,2 +1,0 @@
-set prefix=(cd)/BOOT
-configfile /BOOT/GRUB.CFG

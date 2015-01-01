@@ -1,0 +1,9 @@
+.
+kernel/mm
+kernel/lib
+kernel/arch
+kernel/vga
+kernel
+kernel/std
+kernel/disk
+kernel/proc
