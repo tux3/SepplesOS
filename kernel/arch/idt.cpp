@@ -1,4 +1,5 @@
 #include <arch/idt.h>
+#include <arch/gdt.h>
 #include <arch/pinio.h>
 #include <std/types.h>
 #include <mm/memcpy.h>
@@ -25,45 +26,47 @@ void IDT::init()
     idtr.base = IDTBASE;
     idt = (IDTDesc*)(u64) idtr.base;
 
+    u16 CS = GDT::SS_CODE64;
+
     // Init default vectors (reserved)
     for (int i = 0; i < 32; i++)
-        initDescriptor(0x08, (u32)(u64) _asm_reserved_int, INTGATE, &idt[i]);
+        initDescriptor(CS, (u32)(u64) _asm_reserved_int, INTGATE, &idt[i]);
 
     // Init default vectors (user-defined)
     for (int i = 32; i < IDTSIZE; i++)
-        initDescriptor(0x08, (u32)(u64) _asm_default_int, INTGATE, &idt[i]);
+        initDescriptor(CS, (u32)(u64) _asm_default_int, INTGATE, &idt[i]);
 
     // Vectors 0 to 31 are reserved for exceptions/CPU interrupts (15 is reserver, 9 is used by i386 and before)
-    initDescriptor(0x08, (u32)(u64) _asm_exc_DIV0, INTGATE, &idt[0]); // #DivisionError
-    initDescriptor(0x08, (u32)(u64) _asm_exc_DEBUG, INTGATE, &idt[1]); // #Debug
-    initDescriptor(0x08, (u32)(u64) _asm_exc_NMI, INTGATE, &idt[2]); // #NMI
-    initDescriptor(0x08, (u32)(u64) _asm_exc_BP, INTGATE, &idt[3]); // #Breakpoint
-    initDescriptor(0x08, (u32)(u64) _asm_exc_OVRFLW, INTGATE, &idt[4]); // #OVERFLOW
-    initDescriptor(0x08, (u32)(u64) _asm_exc_BOUNDS, INTGATE, &idt[5]); // #Bounds
-    initDescriptor(0x08, (u32)(u64) _asm_exc_OPCODE, INTGATE, &idt[6]); // #Invalid Opcode
-    initDescriptor(0x08, (u32)(u64) _asm_exc_NOMATH, INTGATE, &idt[7]); // #No Math Coprocessor
-    initDescriptor(0x08, (u32)(u64) _asm_exc_DOUBLEF, INTGATE | 1, &idt[8]); // #Double Fault, on IST 1
-    initDescriptor(0x08, (u32)(u64) _asm_exc_MF, INTGATE, &idt[9]); // #CoProcessor Segment Overrun (not used after the i386)
-    initDescriptor(0x08, (u32)(u64) _asm_exc_TSS, INTGATE, &idt[10]); // #Invalid TSS
-    initDescriptor(0x08, (u32)(u64) _asm_exc_SWAP, INTGATE, &idt[11]); // #Segment not present in memory (used for SWAP-ing ram)
-    initDescriptor(0x08, (u32)(u64) _asm_exc_STACKF, INTGATE, &idt[12]); // #Stack Fault (stack operation and ss load)
-    initDescriptor(0x08, (u32)(u64) _asm_exc_GP, INTGATE, &idt[13]);	// #Global Protection Fault
-    initDescriptor(0x08, (u32)(u64) _asm_exc_PF, INTGATE, &idt[14]); // #Page Fault
-    initDescriptor(0x08, (u32)(u64) _asm_exc_MF, INTGATE, &idt[16]); // #Math fault (floating point)
-    initDescriptor(0x08, (u32)(u64) _asm_exc_AC, INTGATE, &idt[17]); // #Alignment check
-    initDescriptor(0x08, (u32)(u64) _asm_exc_MC, INTGATE, &idt[18]); // #Machine check
-    initDescriptor(0x08, (u32)(u64) _asm_exc_XM, INTGATE, &idt[19]); // #SIMD floating-point exception
+    initDescriptor(CS, (u32)(u64) _asm_exc_DIV0, INTGATE, &idt[0]); // #DivisionError
+    initDescriptor(CS, (u32)(u64) _asm_exc_DEBUG, INTGATE, &idt[1]); // #Debug
+    initDescriptor(CS, (u32)(u64) _asm_exc_NMI, INTGATE, &idt[2]); // #NMI
+    initDescriptor(CS, (u32)(u64) _asm_exc_BP, INTGATE, &idt[3]); // #Breakpoint
+    initDescriptor(CS, (u32)(u64) _asm_exc_OVRFLW, INTGATE, &idt[4]); // #OVERFLOW
+    initDescriptor(CS, (u32)(u64) _asm_exc_BOUNDS, INTGATE, &idt[5]); // #Bounds
+    initDescriptor(CS, (u32)(u64) _asm_exc_OPCODE, INTGATE, &idt[6]); // #Invalid Opcode
+    initDescriptor(CS, (u32)(u64) _asm_exc_NOMATH, INTGATE, &idt[7]); // #No Math Coprocessor
+    initDescriptor(CS, (u32)(u64) _asm_exc_DOUBLEF, INTGATE | 1, &idt[8]); // #Double Fault, on IST 1
+    initDescriptor(CS, (u32)(u64) _asm_exc_MF, INTGATE, &idt[9]); // #CoProcessor Segment Overrun (not used after the i386)
+    initDescriptor(CS, (u32)(u64) _asm_exc_TSS, INTGATE, &idt[10]); // #Invalid TSS
+    initDescriptor(CS, (u32)(u64) _asm_exc_SWAP, INTGATE, &idt[11]); // #Segment not present in memory (used for SWAP-ing ram)
+    initDescriptor(CS, (u32)(u64) _asm_exc_STACKF, INTGATE, &idt[12]); // #Stack Fault (stack operation and ss load)
+    initDescriptor(CS, (u32)(u64) _asm_exc_GP, INTGATE, &idt[13]);	// #Global Protection Fault
+    initDescriptor(CS, (u32)(u64) _asm_exc_PF, INTGATE, &idt[14]); // #Page Fault
+    initDescriptor(CS, (u32)(u64) _asm_exc_MF, INTGATE, &idt[16]); // #Math fault (floating point)
+    initDescriptor(CS, (u32)(u64) _asm_exc_AC, INTGATE, &idt[17]); // #Alignment check
+    initDescriptor(CS, (u32)(u64) _asm_exc_MC, INTGATE, &idt[18]); // #Machine check
+    initDescriptor(CS, (u32)(u64) _asm_exc_XM, INTGATE, &idt[19]); // #SIMD floating-point exception
 
     // Hardware interrupt vectors
-    initDescriptor(0x08, (u32)(u64) _asm_irq_0, INTGATE, &idt[32]);	// Scheduler clock (regular ticks)
-    initDescriptor(0x08, (u32)(u64) _asm_irq_1, INTGATE, &idt[33]);	// Keyboard
-    initDescriptor(0x08, (u32)(u64) _asm_irq_7, INTGATE, &idt[39]);	// "Fake" interrupt (spurious irq after a race condition PIC/CPU)
-    initDescriptor(0x08, (u32)(u64) _asm_irq_8, INTGATE, &idt[112]);	// System clock (date and time)
-    initDescriptor(0x08, (u32)(u64) _asm_irq_hd_op_complete, INTGATE, &idt[118]); // Hard disk controller operation complete callback
-    initDescriptor(0x08, (u32)(u64) _asm_irq_hd_op_complete, INTGATE, &idt[119]); // Hard disk controller operation complete callback
+    initDescriptor(CS, (u32)(u64) _asm_irq_0, INTGATE, &idt[32]);	// Scheduler clock (regular ticks)
+    initDescriptor(CS, (u32)(u64) _asm_irq_1, INTGATE, &idt[33]);	// Keyboard
+    initDescriptor(CS, (u32)(u64) _asm_irq_7, INTGATE, &idt[39]);	// "Fake" interrupt (spurious irq after a race condition PIC/CPU)
+    initDescriptor(CS, (u32)(u64) _asm_irq_8, INTGATE, &idt[112]);	// System clock (date and time)
+    initDescriptor(CS, (u32)(u64) _asm_irq_hd_op_complete, INTGATE, &idt[118]); // Hard disk controller operation complete callback
+    initDescriptor(CS, (u32)(u64) _asm_irq_hd_op_complete, INTGATE, &idt[119]); // Hard disk controller operation complete callback
 
     // System calls - int 0x30 (48d)
-    initDescriptor(0x08, (u32)(u64) _asm_syscalls, TRAPGATE, &idt[48]);  // syscalls
+    initDescriptor(CS, (u32)(u64) _asm_syscalls, TRAPGATE, &idt[48]);  // syscalls
 
     // Copy the IDT and load it
     memcpy((char *)(u64) idtr.base, (char *) idt, idtr.limite);

@@ -1,10 +1,10 @@
 #include <proc/process.h>
-#include <proc/tss.h>
 #include <proc/elf.h>
 #include <mm/memcpy.h>
 #include <mm/memmap.h>
 #include <mm/paging.h>
 #include <arch/gdt.h>
+#include <arch/tss.h>
 #include <lib/llist.h>
 #include <debug.h>
 #include <error.h>
@@ -211,19 +211,19 @@ int loadTask(Node *node, const int argc, const char **argv)
     //terminal = new VGAText(); // Creer un nouveau Terminal, de type VGAText
 
     // Initialise le reste des registres et des attributs
-    pList[pid].regs.ss = GDT::getUserStackSelector();
+    pList[pid].regs.ss = GDT::SS_USRSTACK;
     pList[pid].regs.rsp = stackp;
     pList[pid].regs.eflags = 0x0;
-    pList[pid].regs.cs = GDT::getUserCode32Selector();
+    pList[pid].regs.cs = GDT::SS_USRCODE32;
     pList[pid].regs.rip = eEntry;
-    pList[pid].regs.ds = GDT::getUserDataSelector();
-    pList[pid].regs.es = GDT::getUserDataSelector();
-    pList[pid].regs.fs = GDT::getUserDataSelector();
-    pList[pid].regs.gs = GDT::getUserDataSelector();
+    pList[pid].regs.ds = GDT::SS_USRDATA;
+    pList[pid].regs.es = GDT::SS_USRDATA;
+    pList[pid].regs.fs = GDT::SS_USRDATA;
+    pList[pid].regs.gs = GDT::SS_USRDATA;
 
     pList[pid].regs.cr3 = (u64) pList[pid].pml4;
 
-    pList[pid].kstack.ss0 = GDT::getDefaultSS();
+    pList[pid].kstack.ss0 = GDT::SS_DATA;
     pList[pid].kstack.rsp0 = (u64) (kstack + PAGESIZE - 16);
 
     pList[pid].regs.rax = 0;
@@ -393,7 +393,6 @@ void schedule()
         current->regs.rdx = stack_ptr[12];
         current->regs.rbx = stack_ptr[11];
         current->regs.rbp = stack_ptr[10];
-        current->regs.rax = 0xAAAABBBB;
         current->regs.rsi = stack_ptr[9];
         current->regs.rdi = stack_ptr[8];
         current->regs.r8 = stack_ptr[7];
@@ -428,11 +427,11 @@ void schedule()
             //current->regs.rsp = stack_ptr[9] + 12;	// vaut : &stack_ptr[18]
             // current->regs.ss =
             current->regs.rsp = stack_ptr[18];
-            current->regs.ss = GDT::getDefaultSS();
+            current->regs.ss = GDT::SS_DATA;
         }
 
         // Sauver le TSS de l'ancien processus
-        current->kstack.ss0 = GDT::getDefaultSS();
+        current->kstack.ss0 = GDT::SS_DATA;
         current->kstack.rsp0 = TSS::getDefaultTss()->rsp0;
     }
 

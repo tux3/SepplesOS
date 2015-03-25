@@ -4,7 +4,7 @@
 #include <mm/paging.h>
 #include <mm/malloc.h>
 #include <mm/memzero.h>
-#include <arch/gdt.h>
+#include <arch/tss.h>
 #include <arch/idt.h>
 #include <arch/pic.h>
 #include <arch/pinio.h>
@@ -12,7 +12,6 @@
 #include <disk/partTable.h>
 #include <disk/vfs.h>
 #include <disk/ext2.h>
-#include <proc/tss.h>
 #include <proc/process.h>
 #include <keyboard.h>
 #include <error.h>
@@ -32,7 +31,6 @@ extern "C" int boot(int magic, multiboot_info* multibootHeader)
 
     IDT::init();
     TSS::init();
-    GDT::init();
     PIC::init();
     PIC::setFrequency(25);
     Malloc::init();

@@ -4,7 +4,9 @@ config_interface: textconfig
 display_library: sdl2
 memory: host=512, guest=512
 megs: 512
+#romimage: file="/usr/local/share/bochs/BIOS-bochs-latest"
 romimage: file="/usr/local/share/bochs/BIOS-bochs-latest"
+#vgaromimage: file="/usr/local/share/bochs/VGABIOS-lgpl-latest"
 vgaromimage: file="/usr/local/share/bochs/VGABIOS-lgpl-latest"
 boot: cdrom
 floppy_bootsig_check: disabled=0

@@ -1,7 +1,10 @@
-;/*
+;/* Start of C/C++ defines
 %if 0;*/
 
-//This file contains both ASM and C defines, they are centralized to make editing easier
+// This file contains both ASM, C, and C++ defines
+// They are centralized to make editing easier
+// The mess of symbols at the top and bottom are necessary hacks
+// to keep NASM, GCC, and G++ all happy at the same time
 
 #ifndef MEMMAP_H
 #define MEMMAP_H
@@ -26,7 +29,7 @@
 
 #define FREE_PAGES_START 0x100000UL
 
-#define	USER_OFFSET 		0x40000000UL // A lot of code assumes that this value will not change. Make sure to review it before changing it
+#define	USER_OFFSET 		0x40000000UL // Apply changes in shell makefiles (ld -Ttext=USER_OFFSET) before compiling !
 #define	USER_STACK 			0xE0000000UL
 
 /* Start of ASM defines
@@ -41,6 +44,7 @@
 
 %define GDT_ADDR						0x5000
 %define IDT_ADDR						0x5800
+%define RING0_STACK                     0x6FF8
 %define KERN_STACK						0x7FFF8
 
 %define VGATEXT_FRAMEBUFFER_VADDR		0xB8000

@@ -1,44 +1,22 @@
 #ifndef GDT_H_INCLUDED
 #define GDT_H_INCLUDED
 
-#include <std/types.h>
-#include <mm/memmap.h>
-
-// Segment descriptor
-struct GDTDesc
+namespace GDT
 {
-    u16 lim0_15;
-    u16 base0_15;
-    u8 base16_23;
-    u8 acces;
-    u8 lim16_19:4;
-    u8 other:4;
-    u8 base24_31;
-} __attribute__ ((packed));
-
-// GDT Register
-struct GDTR
-{
-    u16 limite;
-    u64 base;
-} __attribute__ ((packed));
-
-class GDT
-{
-    public:
-        GDT() = delete;
-        static void initDescriptor(u32, u32, u8, u8, struct GDTDesc *);
-        static void init();
-        static struct GDTDesc* getDescriptorTable();
-        static int getDefaultSS();
-        static int getUserStackSelector();
-        static int getUserDataSelector();
-        static int getUserCode32Selector();
-        static int getUserCode64Selector();
-
-    private:
-        static GDTDesc* gdt;
-        static GDTR gdtr;
-};
+    // Segment selector values
+    static constexpr int
+        SS_NULL =       8*0,
+        SS_DATA =       8*1,
+        SS_CODE64 =     8*2,
+        SS_CODE32 =     8*3,
+        SS_DATA16 =     8*4,
+        SS_CODE16 =     8*5,
+        SS_USRDATA =    8*6+0b11,
+        SS_USRSTACK =   8*7+0b11,
+        SS_USRCODE64 =  8*8+0b11,
+        SS_USRCODE32 =  8*9+0b11,
+        SS_TSS =        8*10, // Takes up descriptors 10 and 11
+        SS_TSS_STACK =  8*12;
+}
 
 #endif // GDT_H_INCLUDED
